@@ -2,7 +2,9 @@ import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 
 def get_db_connection():
-    conn = sqlite3.connect('intervio.db')
+    import os
+    db_path = '/tmp/intervio.db' if os.environ.get('VERCEL') else 'intervio.db'
+    conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     return conn
 
