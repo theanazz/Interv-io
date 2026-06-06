@@ -88,13 +88,16 @@
 <body class="bg-background text-on-surface font-body overflow-hidden">
 
 <div class="flex h-screen overflow-hidden">
+    <!-- Mobile Overlay -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 lg:hidden"></div>
     
     <!-- Sidebar Navigation -->
-    <aside id="main-sidebar" class="hidden lg:flex w-72 flex-shrink-0 bg-surface-container-low border-r border-outline-variant/10 flex-col p-6 z-50 overflow-y-auto custom-scrollbar">
-        <div class="mb-12 px-2">
+    <aside id="main-sidebar" class="hidden lg:flex fixed lg:relative inset-y-0 left-0 w-72 flex-shrink-0 bg-surface-container-low border-r border-outline-variant/10 flex-col p-6 z-50 overflow-y-auto custom-scrollbar transition-transform duration-300">
+        <div class="mb-12 px-2 flex justify-between items-center">
             <a href="/">
                 <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" class="h-10 w-auto" style="filter: hue-rotate(150deg) brightness(1.2);">
             </a>
+            <button onclick="toggleSidebar()" class="lg:hidden text-outline hover:text-white"><span class="material-symbols-outlined">close</span></button>
         </div>
         
         <nav class="space-y-2 flex-grow">
@@ -193,7 +196,7 @@
         <header class="h-20 border-b border-outline-variant/10 flex items-center justify-between px-4 lg:px-10 flex-shrink-0 relative z-40 bg-background/80 backdrop-blur-md">
             
             <div class="flex items-center gap-3 lg:gap-4 flex-shrink-0">
-                <button onclick="const sb = document.getElementById('main-sidebar'); sb.classList.toggle('hidden'); sb.classList.toggle('absolute'); sb.classList.toggle('h-full'); sb.classList.toggle('shadow-2xl');" class="lg:hidden w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-white focus:outline-none">
+                <button onclick="toggleSidebar()" class="lg:hidden w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-white focus:outline-none hover:bg-surface-variant/80 transition-colors">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 <h1 class="font-headline text-lg lg:text-2xl text-white tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-full">{% block header_title %}Welcome Back, {{ user_name }} 👋{% endblock %}</h1>
@@ -323,8 +326,16 @@
     </main>
 </div>
 
+<script>
+    function toggleSidebar() {
+        const sb = document.getElementById('main-sidebar');
+        const overlay = document.getElementById('mobile-overlay');
+        sb.classList.toggle('hidden');
+        sb.classList.toggle('flex');
+        overlay.classList.toggle('hidden');
+    }
+</script>
 {% block scripts %}{% endblock %}
-
 <script>
     function clearAllNotifications() {
         const list = document.getElementById('notif-list');
