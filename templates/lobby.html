@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Interview Lobby | Interv.io{% endblock %}
+
+{% block header_title %}
+<div class="flex flex-col items-start leading-tight">
+    <span>Interview Lobby</span>
+    <span class="text-[10px] font-label text-outline uppercase tracking-[0.2em] mt-1">Calibration Required</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-10 py-6 mt-4">
+    <div class="glass-panel p-6 rounded-[2rem] border border-primary/20 relative overflow-hidden text-center mb-6">
+        <span class="material-symbols-outlined text-primary text-3xl mb-3 animate-float">sensors</span>
+        <h2 class="font-headline text-2xl text-white mb-1">Neural Link Calibration</h2>
+        <p class="text-on-surface-variant font-label max-w-lg mx-auto text-sm">Select your target role and experience level to calibrate the interview environment.</p>
+        
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 blur-[120px] rounded-full"></div>
+    </div>
+
+    <form action="{{ url_for('interview') }}" method="GET" class="space-y-10">
+        <!-- Universal Role Input -->
+        <div class="glass-panel p-8 rounded-3xl border border-primary/20 bg-primary/5">
+            <h3 class="font-headline text-xs text-primary uppercase tracking-widest mb-6">Target Role Configuration</h3>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-6 top-1/2 -translate-y-1/2 text-primary text-2xl">search</span>
+                <input type="text" name="role" required 
+                       placeholder="e.g. Senior Fullstack Developer" 
+                       class="w-full bg-surface-container border border-outline-variant/20 rounded-2xl py-6 pl-16 pr-8 text-white font-headline text-lg focus:outline-none focus:border-primary transition-all placeholder:text-outline/50">
+            </div>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <span class="text-[10px] text-outline uppercase tracking-wider mr-2 self-center">Quick Suggestions:</span>
+                <button type="button" onclick="document.querySelector('input[name=role]').value='Software Engineer'" class="px-3 py-1.5 rounded-lg bg-surface-variant text-[10px] text-white hover:bg-primary/20 transition-all border border-white/5">Software Engineer</button>
+                <button type="button" onclick="document.querySelector('input[name=role]').value='Product Manager'" class="px-3 py-1.5 rounded-lg bg-surface-variant text-[10px] text-white hover:bg-primary/20 transition-all border border-white/5">Product Manager</button>
+                <button type="button" onclick="document.querySelector('input[name=role]').value='Fullstack Developer'" class="px-3 py-1.5 rounded-lg bg-surface-variant text-[10px] text-white hover:bg-primary/20 transition-all border border-white/5">Fullstack Developer</button>
+                <button type="button" onclick="document.querySelector('input[name=role]').value='UX Designer'" class="px-3 py-1.5 rounded-lg bg-surface-variant text-[10px] text-white hover:bg-primary/20 transition-all border border-white/5">UX Designer</button>
+            </div>
+        </div>
+
+        <!-- Experience Level Selection -->
+        <div class="glass-panel p-8 rounded-3xl border border-outline-variant/10">
+            <h3 class="font-headline text-xs text-outline uppercase tracking-widest mb-6">Experience Dial</h3>
+            <div class="flex flex-wrap gap-4">
+                <label class="cursor-pointer group flex-1 min-w-[200px]">
+                    <input type="radio" name="level" value="Junior" class="peer sr-only">
+                    <span class="block p-5 rounded-2xl border border-outline-variant/30 group-hover:border-primary/50 peer-checked:bg-primary peer-checked:text-background transition-all h-full">
+                        <span class="block font-headline text-sm font-bold">Junior</span>
+                        <span class="block text-[10px] text-on-surface-variant group-hover:text-white peer-checked:!text-background/80 mt-1 font-body transition-colors">Basics + Fundamentals</span>
+                    </span>
+                </label>
+                <label class="cursor-pointer group flex-1 min-w-[200px]">
+                    <input type="radio" name="level" value="Mid-Level" class="peer sr-only" checked>
+                    <span class="block p-5 rounded-2xl border border-outline-variant/30 group-hover:border-primary/50 peer-checked:bg-primary peer-checked:text-background transition-all h-full">
+                        <span class="block font-headline text-sm font-bold">Mid-Level</span>
+                        <span class="block text-[10px] text-on-surface-variant group-hover:text-white peer-checked:!text-background/80 mt-1 font-body transition-colors">Practical + Scenario Based</span>
+                    </span>
+                </label>
+                <label class="cursor-pointer group flex-1 min-w-[200px]">
+                    <input type="radio" name="level" value="Senior" class="peer sr-only">
+                    <span class="block p-5 rounded-2xl border border-outline-variant/30 group-hover:border-primary/50 peer-checked:bg-primary peer-checked:text-background transition-all h-full">
+                        <span class="block font-headline text-sm font-bold">Senior / Staff</span>
+                        <span class="block text-[10px] text-on-surface-variant group-hover:text-white peer-checked:!text-background/80 mt-1 font-body transition-colors">Architecture + Leadership</span>
+                    </span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Session Specifications Card (Interview Metadata Card) -->
+        <div class="glass-panel p-8 rounded-3xl border border-primary/20 bg-surface-container-low/40 relative overflow-hidden">
+            <div class="absolute -right-20 -bottom-20 w-64 h-64 bg-secondary/5 blur-[80px] rounded-full"></div>
+            
+            <div class="flex flex-col md:flex-row gap-8 justify-between">
+                <!-- Left: Dynamic Specs -->
+                <div class="flex-grow space-y-6">
+                    <h3 class="font-headline text-xs text-primary uppercase tracking-widest">Interview Metadata Card</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <!-- Duration -->
+                        <div class="p-4 rounded-2xl bg-surface-container-highest/20 border border-outline-variant/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary text-xl">schedule</span>
+                            <div>
+                                <span class="block text-[9px] uppercase tracking-wider text-outline font-label">Interview Duration</span>
+                                <span class="block text-sm font-headline text-white font-bold" id="meta-duration">25 mins</span>
+                            </div>
+                        </div>
+
+                        <!-- Questions -->
+                        <div class="p-4 rounded-2xl bg-surface-container-highest/20 border border-outline-variant/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-secondary text-xl">chat_bubble</span>
+                            <div>
+                                <span class="block text-[9px] uppercase tracking-wider text-outline font-label">Questions</span>
+                                <span class="block text-sm font-headline text-white font-bold" id="meta-questions">12</span>
+                            </div>
+                        </div>
+
+                        <!-- Difficulty -->
+                        <div class="p-4 rounded-2xl bg-surface-container-highest/20 border border-outline-variant/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-tertiary text-xl">insights</span>
+                            <div>
+                                <span class="block text-[9px] uppercase tracking-wider text-outline font-label">Difficulty</span>
+                                <span class="block text-sm font-headline text-white font-bold" id="meta-difficulty">Mid-Level</span>
+                            </div>
+                        </div>
+
+                        <!-- AI Analysis -->
+                        <div class="p-4 rounded-2xl bg-surface-container-highest/20 border border-outline-variant/10 flex items-center gap-3">
+                            <span class="material-symbols-outlined text-primary text-xl">analytics</span>
+                            <div>
+                                <span class="block text-[9px] uppercase tracking-wider text-outline font-label">AI Analysis</span>
+                                <span class="block text-sm font-headline text-white font-bold flex items-center gap-1.5">
+                                    Enabled
+                                    <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Interactive Toggles -->
+                <div class="w-full md:w-80 flex flex-col justify-between border-t md:border-t-0 md:border-l border-outline-variant/10 pt-6 md:pt-0 md:pl-8 space-y-4">
+                    <h3 class="font-headline text-xs text-outline uppercase tracking-widest">Calibration Details</h3>
+                    
+                    <div class="space-y-4">
+                        <!-- AI Voice Toggle -->
+                        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-highest/10 border border-outline-variant/10">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-secondary text-lg" id="voice-icon">graphic_eq</span>
+                                <div>
+                                    <span class="block text-[10px] text-white font-bold">AI Voice Stream</span>
+                                    <span class="block text-[9px] text-outline" id="voice-status-text">Voice: Enabled</span>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="voice-toggle" name="voice" value="enabled" class="sr-only peer" checked>
+                                <div class="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-secondary"></div>
+                            </label>
+                        </div>
+
+                        <!-- Camera Toggle -->
+                        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-highest/10 border border-outline-variant/10">
+                            <div class="flex items-center gap-2.5">
+                                <span class="material-symbols-outlined text-tertiary text-lg" id="camera-icon">videocam_off</span>
+                                <div>
+                                    <span class="block text-[10px] text-white font-bold">Camera Requirements</span>
+                                    <span class="block text-[9px] text-outline" id="camera-status-text">Camera: Not Required</span>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="camera-toggle" name="camera" value="enabled" class="sr-only peer">
+                                <div class="w-9 h-5 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                            </label>
+                        </div>
+                        
+                        <!-- Camera Preview Block -->
+                        <div id="lobby-camera-preview-container" class="hidden mt-3 w-full h-32 rounded-2xl overflow-hidden border border-primary/20 relative bg-black/60 shadow-[0_0_15px_rgba(143,245,255,0.15)]">
+                            <video id="lobby-webcam-preview" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                            <span class="absolute bottom-2 left-3 text-[8px] tracking-widest uppercase font-label bg-black/60 backdrop-blur px-2 py-0.5 rounded text-primary flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                                Webcam Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Target Profile & Calibration Structure Card -->
+        <div id="calibration-details-panel" class="glass-panel p-8 rounded-3xl border border-outline-variant/10 bg-surface-container-low/20 transition-all duration-300">
+            <h3 class="font-headline text-xs text-outline uppercase tracking-widest mb-6">Target Profile & Calibration Structure</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Target & Focus Areas -->
+                <div class="space-y-6">
+                    <div>
+                        <span class="block text-[9px] uppercase tracking-wider text-outline font-label mb-2">Target Audience</span>
+                        <p class="text-sm text-white font-bold" id="calib-target-users">Students, Freshers, Interns</p>
+                    </div>
+                    <div>
+                        <span class="block text-[9px] uppercase tracking-wider text-outline font-label mb-3">Focus Areas</span>
+                        <div class="flex flex-wrap gap-2" id="calib-focus-areas">
+                            <!-- Pills populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example Flow Breakdown -->
+                <div class="space-y-4">
+                    <span class="block text-[9px] uppercase tracking-wider text-outline font-label">Example Question Flow</span>
+                    <div class="space-y-2 max-h-[220px] overflow-y-auto custom-scrollbar pr-2" id="calib-flow-breakdown">
+                        <!-- Populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full py-5 rounded-[1.5rem] bg-secondary text-background font-headline text-sm uppercase tracking-widest hover:brightness-110 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 shadow-[0_20px_40px_rgba(162,243,31,0.15)] font-bold">
+            Start AI Interview
+        </button>
+    </form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const levelRadios = document.querySelectorAll('input[name="level"]');
+    const metaDuration = document.getElementById('meta-duration');
+    const metaQuestions = document.getElementById('meta-questions');
+    const metaDifficulty = document.getElementById('meta-difficulty');
+    
+    const voiceToggle = document.getElementById('voice-toggle');
+    const voiceIcon = document.getElementById('voice-icon');
+    const voiceStatusText = document.getElementById('voice-status-text');
+    
+    const cameraToggle = document.getElementById('camera-toggle');
+    const cameraIcon = document.getElementById('camera-icon');
+    const cameraStatusText = document.getElementById('camera-status-text');
+    
+    // Dynamic Calibration Data
+    const calibrationData = {
+        'Junior': {
+            duration: '15–20 mins',
+            questions: '8–12',
+            difficulty: 'Easy → Medium',
+            targetUsers: 'Students, Freshers, Interns',
+            focusAreas: ['Fundamentals', 'Definitions', 'Simple Coding', 'Basic Projects', 'Communication'],
+            flow: [
+                { type: 'Introduction', count: 1 },
+                { type: 'Fundamentals', count: 3 },
+                { type: 'Coding', count: 2 },
+                { type: 'Project Questions', count: 2 },
+                { type: 'HR/Behavioral', count: 2 }
+            ]
+        },
+        'Mid-Level': {
+            duration: '25–40 mins',
+            questions: '12–18',
+            difficulty: 'Medium → Hard',
+            targetUsers: '2–5 years experience',
+            focusAreas: ['Real-world Scenarios', 'APIs', 'Optimization', 'Debugging', 'Architecture Basics'],
+            flow: [
+                { type: 'Intro', count: 1 },
+                { type: 'Technical Fundamentals', count: 4 },
+                { type: 'Scenario-Based', count: 4 },
+                { type: 'Coding/Problem Solving', count: 4 },
+                { type: 'System Design Lite', count: 2 },
+                { type: 'Behavioral', count: 2 }
+            ]
+        },
+        'Senior': {
+            duration: '45–60 mins',
+            questions: '15–25',
+            difficulty: 'Hard → Expert',
+            targetUsers: '5+ years, Team leads, Architects',
+            focusAreas: ['System Design', 'Scalability', 'Leadership', 'Tradeoffs', 'Architecture', 'Performance', 'Security', 'Mentoring'],
+            flow: [
+                { type: 'Leadership', count: 3 },
+                { type: 'Advanced Technical', count: 5 },
+                { type: 'Architecture', count: 5 },
+                { type: 'Scalability', count: 3 },
+                { type: 'Incident Handling', count: 2 },
+                { type: 'Behavioral', count: 3 },
+                { type: 'Decision Making', count: 2 }
+            ]
+        }
+    };
+    
+    function renderFocusAreas(areas, level) {
+        const container = document.getElementById('calib-focus-areas');
+        container.innerHTML = '';
+        
+        let colorClasses = 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20';
+        if (level === 'Mid-Level') colorClasses = 'bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20';
+        if (level === 'Senior') colorClasses = 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20';
+        
+        areas.forEach(area => {
+            const pill = document.createElement('span');
+            pill.className = `px-3 py-1 rounded-full border text-[10px] font-headline uppercase tracking-wider font-bold transition-all duration-200 cursor-default ${colorClasses}`;
+            pill.textContent = area;
+            container.appendChild(pill);
+        });
+    }
+    
+    function renderFlow(flow, level) {
+        const container = document.getElementById('calib-flow-breakdown');
+        container.innerHTML = '';
+        
+        let textClass = 'text-primary';
+        let bgClass = 'bg-primary/10';
+        if (level === 'Mid-Level') {
+            textClass = 'text-secondary';
+            bgClass = 'bg-secondary/10';
+        }
+        if (level === 'Senior') {
+            textClass = 'text-tertiary';
+            bgClass = 'bg-tertiary/10';
+        }
+        
+        flow.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'flex justify-between items-center p-2 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-xs hover:border-outline-variant/35 transition-all';
+            
+            const label = document.createElement('span');
+            label.className = 'text-on-surface-variant font-medium';
+            label.textContent = item.type;
+            
+            const countBadge = document.createElement('span');
+            countBadge.className = `px-2.5 py-0.5 rounded-md ${bgClass} ${textClass} font-bold text-[10px]`;
+            countBadge.textContent = `${item.count} ${item.count === 1 ? 'Question' : 'Qs'}`;
+            
+            row.appendChild(label);
+            row.appendChild(countBadge);
+            container.appendChild(row);
+        });
+    }
+    
+    function updateMetadata(level) {
+        const data = calibrationData[level];
+        if (!data) return;
+        
+        // Update Metadata Card values
+        metaDuration.textContent = data.duration;
+        metaQuestions.textContent = data.questions;
+        metaDifficulty.textContent = data.difficulty;
+        
+        // Update dynamic details card
+        document.getElementById('calib-target-users').textContent = data.targetUsers;
+        renderFocusAreas(data.focusAreas, level);
+        renderFlow(data.flow, level);
+        
+        // Trigger subtle kinetic glowing animation on calibration card border
+        const panel = document.getElementById('calibration-details-panel');
+        panel.classList.remove('border-outline-variant/10', 'border-primary/30', 'border-secondary/30', 'border-tertiary/30');
+        if (level === 'Junior') panel.classList.add('border-primary/30');
+        if (level === 'Mid-Level') panel.classList.add('border-secondary/30');
+        if (level === 'Senior') panel.classList.add('border-tertiary/30');
+    }
+    
+    levelRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            updateMetadata(e.target.value);
+        });
+    });
+    
+    let lobbyCameraStream = null;
+
+    // AI Voice Toggle listener
+    voiceToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            voiceStatusText.textContent = 'Voice: Enabled';
+            voiceIcon.textContent = 'graphic_eq';
+            voiceIcon.classList.remove('text-outline');
+            voiceIcon.classList.add('text-secondary');
+            
+            // Speak pre-flight confirmation
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance("Voice calibration active. Systems ready.");
+                utterance.pitch = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        } else {
+            voiceStatusText.textContent = 'Voice: Disabled';
+            voiceIcon.textContent = 'volume_off';
+            voiceIcon.classList.remove('text-secondary');
+            voiceIcon.classList.add('text-outline');
+        }
+    });
+
+    // Camera Toggle listener
+    cameraToggle.addEventListener('change', (e) => {
+        const previewContainer = document.getElementById('lobby-camera-preview-container');
+        const video = document.getElementById('lobby-webcam-preview');
+        
+        if (e.target.checked) {
+            cameraStatusText.textContent = 'Camera: Required';
+            cameraIcon.textContent = 'videocam';
+            cameraIcon.classList.remove('text-tertiary');
+            cameraIcon.classList.add('text-primary');
+            
+            previewContainer.classList.remove('hidden');
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    lobbyCameraStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error("Lobby camera access denied:", err);
+                    cameraStatusText.textContent = 'Camera: Access Denied';
+                    previewContainer.classList.add('hidden');
+                });
+        } else {
+            cameraStatusText.textContent = 'Camera: Not Required';
+            cameraIcon.textContent = 'videocam_off';
+            cameraIcon.classList.remove('text-primary');
+            cameraIcon.classList.add('text-tertiary');
+            
+            previewContainer.classList.add('hidden');
+            if (lobbyCameraStream) {
+                lobbyCameraStream.getTracks().forEach(track => track.stop());
+                lobbyCameraStream = null;
+            }
+            video.srcObject = null;
+        }
+    });
+    
+    // Init
+    const checkedRadio = document.querySelector('input[name="level"]:checked');
+    if (checkedRadio) {
+        updateMetadata(checkedRadio.value);
+    }
+});
+</script>
+{% endblock %}

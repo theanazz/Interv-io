@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Settings | Interv.io{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto space-y-8 mt-12 px-6">
+    <!-- Settings Hero -->
+    <div class="glass-panel p-10 rounded-[3rem] border-primary/20 relative overflow-hidden">
+        <div class="relative z-10">
+            <h2 class="font-headline text-4xl text-white mb-2 flex items-center gap-4">
+                <span class="material-symbols-outlined text-[40px] text-primary">settings</span>
+                System Configuration
+            </h2>
+            <p class="text-on-surface-variant font-label max-w-xl">Modify your neural profile parameters, update identity modules, and configure your AI simulation environment.</p>
+        </div>
+        <div class="absolute -right-20 -top-20 w-80 h-80 bg-primary/5 blur-[120px] rounded-full"></div>
+    </div>
+
+    <!-- Forms -->
+    <div class="glass-panel p-8 rounded-[2.5rem]">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 mb-6 rounded-2xl bg-primary/10 border border-primary/20 text-primary text-sm flex items-center gap-3">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <form method="POST" action="/settings" class="space-y-6">
+            <h3 class="font-headline text-xl text-white mb-6 border-b border-outline-variant/10 pb-4">Identity Module</h3>
+            
+            <div>
+                <label class="block text-xs font-black text-outline uppercase tracking-widest mb-2">Display Name</label>
+                <input type="text" name="name" value="{{ user.name }}" class="w-full bg-surface-container/50 border border-outline-variant/30 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors" required>
+            </div>
+            
+            <div>
+                <label class="block text-xs font-black text-outline uppercase tracking-widest mb-2">Neural Link (Email Address)</label>
+                <input type="email" name="email" value="{{ user.email }}" class="w-full bg-surface-container/50 border border-outline-variant/30 text-white text-sm rounded-xl px-4 py-3 focus:outline-none focus:border-primary/50 transition-colors" required>
+            </div>
+            
+            <div class="pt-6 mt-6 border-t border-outline-variant/10 flex justify-end">
+                <button type="submit" class="px-8 py-3 rounded-2xl bg-primary text-background font-headline text-xs uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_4px_20px_rgba(143,245,255,0.2)] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Synchronize Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

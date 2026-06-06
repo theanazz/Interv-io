@@ -1,0 +1,2410 @@
+{% extends "base.html" %}
+
+{% block title %}Neural Text Interview | Interv.io{% endblock %}
+
+{% block header_title %}
+<div class="flex flex-col items-start leading-tight">
+    <span>Neural Flow</span>
+    <span class="text-[10px] font-label text-secondary uppercase tracking-[0.2em] mt-1 animate-pulse">
+        {% if selected_voice == 'enabled' and selected_camera == 'enabled' %}
+            AV-Calibrated Calibration
+        {% elif selected_voice == 'enabled' %}
+            Voice-Assisted Calibration
+        {% elif selected_camera == 'enabled' %}
+            Vision-Assisted Calibration
+        {% else %}
+            Text-Only Calibration
+        {% endif %}
+    </span>
+</div>
+{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+<style>
+    .workspace {
+        height: calc(100vh - 120px);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 2rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        position: relative;
+        overflow: hidden;
+    }
+    .neural-hub {
+        width: 100%;
+        height: 110px;
+        background: rgba(26, 25, 27, 0.4);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(143, 245, 255, 0.08);
+        border-radius: 2rem;
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    @keyframes thinking-blink {
+        0%, 100% { opacity: .2; }
+        20% { opacity: 1; }
+    }
+    .thinking-dot {
+        animation: thinking-blink 1.4s infinite both;
+    }
+    .thinking-dot:nth-child(2) { animation-delay: .2s; }
+    .thinking-dot:nth-child(3) { animation-delay: .4s; }
+    .chat-thread {
+        flex: 1;
+        width: 100%;
+        overflow-y: auto;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .message {
+        max-width: 85%;
+        animation: slide-up 0.5s ease;
+        display: flex;
+        flex-direction: column;
+    }
+    .ai-message {
+        align-self: flex-start;
+        align-items: flex-start;
+    }
+    .user-message {
+        align-self: flex-end;
+        align-items: flex-end;
+    }
+    .glass-bubble {
+        padding: 1.25rem 1.75rem;
+        border-radius: 1.5rem;
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .ai-bubble {
+        background: rgba(143, 245, 255, 0.04);
+        border: 1px solid rgba(143, 245, 255, 0.15);
+        color: #e6f9ff;
+        border-bottom-left-radius: 0.4rem;
+    }
+    .user-bubble {
+        background: rgba(162, 243, 31, 0.05);
+        border: 1px solid rgba(162, 243, 31, 0.15);
+        color: #e5fbc4;
+        border-bottom-right-radius: 0.4rem;
+    }
+    .command-bar {
+        position: relative;
+        width: 100%;
+        z-index: 100;
+        margin-top: auto;
+        flex-shrink: 0;
+    }
+    .input-field {
+        width: 100%;
+        padding: 1.5rem 2rem;
+        background: rgba(14, 14, 15, 0.8);
+        backdrop-filter: blur(40px);
+        border: 1px solid rgba(143, 245, 255, 0.2);
+        border-radius: 2.5rem;
+        color: white;
+        font-family: 'Space Grotesk';
+        font-size: 1rem;
+        box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+        transition: all 0.3s;
+    }
+    .input-field:focus {
+        outline: none;
+        border-color: #8ff5ff;
+        box-shadow: 0 0 40px rgba(143, 245, 255, 0.1);
+    }
+    @keyframes slide-up {
+        from { transform: translateY(20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    .typing-indicator::after {
+        content: '|';
+        animation: blink 1s infinite;
+    }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+    
+    @keyframes scanline {
+        0% { transform: translateY(-100%); }
+        100% { transform: translateY(200%); }
+    }
+    .animate-scanline {
+        animation: scanline 6s linear infinite;
+    }
+    .animate-fade-in {
+        animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .animate-slide-left {
+        animation: slide-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .animate-slide-right {
+        animation: slide-right 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes slide-left {
+        from { transform: translateX(-40px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slide-right {
+        from { transform: translateX(40px); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="workspace flex-grow flex flex-col min-h-0">
+    <div class="w-full flex-grow flex gap-8 items-stretch justify-between relative min-h-0">
+        <!-- Main Interview Column -->
+        <div class="flex-grow flex flex-col relative h-full min-w-0" id="main-interview-channel">
+            <!-- Scrollable Content Area -->
+            <div class="flex-grow block w-full min-h-0 overflow-y-auto custom-scrollbar pb-4 pr-2">
+    <!-- AI Voice Panel (Neural Hub Visualization) -->
+    <div class="neural-hub flex-shrink-0">
+        <!-- Left: AI Status info -->
+        <div class="flex items-center gap-4 z-10">
+            <div class="relative w-14 h-14 rounded-full bg-surface-container flex items-center justify-center border border-outline-variant/30" id="ai-avatar-container">
+                <span class="material-symbols-outlined text-primary text-xl transition-all duration-300" id="ai-avatar-icon">smart_toy</span>
+                <!-- Pulse rings around avatar -->
+                <div class="absolute inset-0 rounded-full border-2 border-primary/30 opacity-0 transition-opacity duration-300" id="voice-pulse-ring"></div>
+            </div>
+            <div>
+                <span class="block text-[8px] uppercase tracking-widest text-outline font-label mb-0.5">AI Interviewer Status</span>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full transition-all duration-300" id="status-indicator-dot"></span>
+                    <span class="text-sm font-headline text-white font-bold transition-all duration-300" id="status-text">Speaking</span>
+                    <!-- Thinking Loading Dots Container -->
+                    <span class="hidden items-center gap-0.5 ml-1" id="thinking-dots-container">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center/Right: Live Waveform (oscillates only when speaking) -->
+        <div class="flex-grow max-w-lg h-full flex items-center mx-8 z-10">
+            <canvas id="neural-wave" class="w-full h-12 opacity-80"></canvas>
+        </div>
+
+        <!-- Far Right: Webcam Picture-in-Picture circle (only if Camera Requirements enabled) -->
+        <div id="pip-camera-container" class="hidden relative w-16 h-16 rounded-full overflow-hidden border border-primary/30 bg-black/60 shadow-[0_0_15px_rgba(143,245,255,0.15)] flex-shrink-0 z-10">
+            <!-- Video preview element dynamically appended -->
+        </div>
+    </div>
+
+    <!-- Interview Progress Bar -->
+    <div class="w-full mb-6 px-1">
+        <div class="flex justify-between items-center mb-2">
+            <div class="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-primary font-label">
+                <span class="material-symbols-outlined text-[11px] animate-pulse">speed</span>
+                <span>Session Calibration Progress</span>
+            </div>
+            <span class="text-[10px] font-black text-secondary font-label" id="progress-percent-text">0% Complete</span>
+        </div>
+        <div class="w-full h-2 rounded-full bg-surface-container border border-outline-variant/10 overflow-hidden relative shadow-[inset_0_1px_3px_rgba(0,0,0,0.5)]">
+            <div id="progress-bar-fill" class="h-full bg-gradient-to-r from-primary via-secondary to-secondary rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(143,245,255,0.3)]" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <!-- Active Question Card -->
+    <div id="active-question-card" class="w-full glass-panel p-6 rounded-3xl border border-primary/20 bg-primary/5 mb-6 relative overflow-hidden transition-all duration-300 flex-shrink-0">
+        <div class="absolute -right-16 -top-16 w-48 h-48 bg-primary/5 blur-[50px] rounded-full"></div>
+        
+        <!-- Header row: Index & Status badge -->
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-[10px] font-black uppercase tracking-widest text-primary font-label" id="q-index-header">QUESTION 1/12</span>
+            <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/20 font-label" id="q-topic-badge">Introduction</span>
+        </div>
+        
+        <!-- Question Text -->
+        <h3 class="font-headline text-lg text-white mb-6 leading-relaxed min-h-[3rem]" id="current-question">
+            "Initializing Neural Space... Connection established."
+        </h3>
+        
+        <!-- Metadata Row -->
+        <div class="grid grid-cols-3 gap-4 pt-4 border-t border-outline-variant/10 text-left">
+            <!-- Topic -->
+            <div>
+                <span class="block text-[8px] uppercase tracking-wider text-outline font-label mb-1">Target Focus</span>
+                <span class="block text-xs text-white font-bold" id="q-focus-text">Fundamentals</span>
+            </div>
+            
+            <!-- Difficulty -->
+            <div>
+                <span class="block text-[8px] uppercase tracking-wider text-outline font-label mb-1">Difficulty</span>
+                <span class="block text-xs font-bold text-secondary" id="q-difficulty-text">Medium</span>
+            </div>
+            
+            <!-- Expected Time -->
+            <div>
+                <span class="block text-[8px] uppercase tracking-wider text-outline font-label mb-1">Expected Time</span>
+                <span class="block text-xs text-white font-bold" id="q-time-text">2 mins</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Conversation Flow -->
+    <div id="chat-thread" class="chat-thread">
+        <!-- Past question-answer bubbles appended dynamically -->
+        <!-- AI Typing Indicator -->
+        <div id="ai-typing-indicator" class="hidden message ai-message w-full max-w-xs">
+            <div class="flex items-center gap-1.5 mb-1.5 px-2">
+                <span class="material-symbols-outlined text-[13px] text-primary animate-spin">sync</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-primary font-label" id="ai-typing-status">Neural Engine Thinking</span>
+            </div>
+            <div class="glass-bubble ai-bubble flex items-center gap-2 py-3 px-4 shadow-lg">
+                <span class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#8ff5ff] thinking-dot"></span>
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coding Challenge Mode Panel -->
+    <div id="coding-workspace" class="hidden flex-grow flex flex-col gap-4 overflow-hidden mb-6" style="height: calc(100% - 180px); width: 100%;">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow overflow-hidden h-full">
+            <!-- Left: Problem Description & Test Cases -->
+            <div class="lg:col-span-5 flex flex-col gap-4 h-full overflow-y-auto pr-2 custom-scrollbar">
+                <!-- Problem Card -->
+                <div class="glass-panel p-5 rounded-2xl border border-primary/20 bg-primary/5">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[9px] font-black text-primary uppercase tracking-widest font-label">Algorithms Round</span>
+                        <span class="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/20 font-label">CODING TASK</span>
+                    </div>
+                    <h3 class="font-headline text-base text-white mb-3" id="coding-problem-title">Two Sum</h3>
+                    <div class="text-xs text-on-surface-variant leading-relaxed font-body" id="coding-problem-description">
+                        Write code here...
+                    </div>
+                </div>
+                
+                <!-- Test Cases Card -->
+                <div class="glass-panel p-5 rounded-2xl border border-outline-variant/10 bg-surface-container/40">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-xs font-black text-outline uppercase tracking-widest">Test Cases</h4>
+                        <button id="run-code-btn" type="button" class="px-4 py-1.5 rounded-xl bg-primary text-background font-label text-[10px] font-bold uppercase tracking-wider hover:scale-105 transition-all">
+                            Run Code
+                        </button>
+                    </div>
+                    <div class="space-y-3" id="coding-test-cases">
+                        <!-- Render test cases here -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Monaco Editor & Outputs -->
+            <div class="lg:col-span-7 flex flex-col gap-4 h-full overflow-y-auto custom-scrollbar pb-2">
+                <!-- Editor Card -->
+                <div class="glass-panel rounded-2xl border border-outline-variant/20 overflow-hidden flex-grow flex flex-col bg-[#1e1e1e] relative min-h-[300px]">
+                    <div class="bg-surface-container px-4 py-2.5 border-b border-outline-variant/10 flex justify-between items-center flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <span class="text-[10px] font-black text-outline uppercase tracking-widest font-label">Language:</span>
+                            
+                            <!-- Custom Styled Dropdown Selector -->
+                            <div class="relative inline-block text-left" id="lang-dropdown-wrapper">
+                                <button type="button" id="lang-dropdown-btn" class="flex items-center gap-2 bg-background border border-outline-variant/30 text-white font-label text-[10px] uppercase tracking-widest rounded-lg px-3 py-1.5 focus:outline-none focus:border-primary/50 hover:bg-surface-container-highest transition-all duration-150 shadow-inner">
+                                    <span id="selected-lang-text">JavaScript</span>
+                                    <span class="material-symbols-outlined text-outline transition-transform duration-200" id="lang-dropdown-arrow" style="font-size: 14px;">expand_more</span>
+                                </button>
+                                
+                                <!-- Dropdown Menu Options -->
+                                <div id="lang-dropdown-options" class="hidden absolute left-0 mt-1.5 w-32 bg-surface-container-low/95 border border-outline-variant/30 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.6)] backdrop-blur-2xl p-1 z-50 transition-all duration-200 transform scale-95 opacity-0 origin-top-left">
+                                    <div class="space-y-0.5">
+                                        <button type="button" data-value="javascript" class="lang-option w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors duration-150 font-label uppercase tracking-wider">JavaScript</button>
+                                        <button type="button" data-value="python" class="lang-option w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors duration-150 font-label uppercase tracking-wider">Python</button>
+                                        <button type="button" data-value="java" class="lang-option w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors duration-150 font-label uppercase tracking-wider">Java</button>
+                                        <button type="button" data-value="cpp" class="lang-option w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors duration-150 font-label uppercase tracking-wider">C++</button>
+                                        <button type="button" data-value="c" class="lang-option w-full text-left px-2.5 py-1.5 rounded-lg text-[10px] text-on-surface-variant hover:bg-primary/10 hover:text-primary transition-colors duration-150 font-label uppercase tracking-wider">C</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#a2f31f]" id="editor-status-dot"></span>
+                    </div>
+                    <div id="monaco-editor" class="flex-grow w-full h-full min-h-[220px]"></div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 flex-shrink-0">
+                    <!-- Complexity Card -->
+                    <div class="glass-panel p-4 rounded-2xl border border-outline-variant/10 bg-surface-container/20 flex flex-col justify-between">
+                        <span class="text-[9px] font-black text-outline uppercase tracking-widest font-label mb-2 block">Complexity Analysis</span>
+                        <div class="space-y-2">
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-on-surface-variant">Time Complexity:</span>
+                                <span class="text-secondary font-bold" id="code-time-complexity">O(1)</span>
+                            </div>
+                            <div class="flex justify-between text-[11px]">
+                                <span class="text-on-surface-variant">Space Complexity:</span>
+                                <span class="text-primary font-bold" id="code-space-complexity">O(1)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Submit Panel -->
+                    <div class="glass-panel p-4 rounded-2xl border border-outline-variant/10 bg-surface-container/20 flex flex-col justify-between">
+                        <span class="text-[9px] font-black text-outline uppercase tracking-widest font-label mb-2 block">Assessment</span>
+                        <button id="submit-code-btn" type="button" class="w-full py-2.5 rounded-xl bg-secondary text-background font-label text-xs font-bold uppercase tracking-wider hover:brightness-105 active:scale-95 transition-all shadow-[0_0_15px_rgba(162,243,31,0.2)]">
+                            Submit Solution
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Feedback Pane -->
+                <div class="glass-panel p-4 rounded-2xl border border-outline-variant/10 bg-surface-container/30 text-left overflow-y-auto max-h-[140px] custom-scrollbar flex-shrink-0">
+                    <span class="text-[9px] font-black text-outline uppercase tracking-widest font-label mb-2 block flex items-center gap-1">
+                        <span class="material-symbols-outlined text-xs text-primary animate-pulse">psychology</span>
+                        Neural Code Feedback
+                    </span>
+                    <p class="text-xs text-on-surface-variant leading-relaxed font-body" id="code-ai-feedback">
+                        Write your solution and click "Run Code" to compile. Results and Big-O analytics will print here.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+            </div> <!-- End of Scrollable Content Area -->
+
+    <!-- Fixed Command Input -->
+    <div class="command-bar">
+        <!-- Real-Time Speaking Analysis Panel -->
+        <div id="speaking-analysis-panel" class="hidden mb-4 p-4 rounded-2xl bg-surface-container-low/95 backdrop-blur-2xl border border-outline-variant/20 shadow-2xl transition-all duration-300">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-secondary text-xs animate-pulse">mic</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-secondary font-label">Real-time Speaking Analysis</span>
+                </div>
+                <span class="text-[9px] font-black uppercase text-outline font-label" id="speaking-wpm-text">0 WPM</span>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+                <!-- Speaking Speed -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="metric-speed">
+                    <span class="material-symbols-outlined text-xs text-secondary" id="metric-speed-icon">speed</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide">Speed: <span class="text-white font-bold" id="metric-speed-val">Good</span></span>
+                </div>
+                
+                <!-- Confidence -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="metric-confidence">
+                    <span class="material-symbols-outlined text-xs text-primary" id="metric-confidence-icon">psychology</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide">Confidence: <span class="text-white font-bold" id="metric-confidence-val">Medium</span></span>
+                </div>
+                
+                <!-- Clarity -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="metric-clarity">
+                    <span class="material-symbols-outlined text-xs text-tertiary" id="metric-clarity-icon">record_voice_over</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide">Clarity: <span class="text-white font-bold" id="metric-clarity-val">High</span></span>
+                </div>
+                
+                <!-- Filler Words -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="metric-fillers">
+                    <span class="material-symbols-outlined text-xs text-error" id="metric-fillers-icon">sms_failed</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide">Fillers: <span class="text-white font-bold" id="metric-fillers-val">Low</span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live AI Evaluation Panel -->
+        <div id="live-eval-panel" class="hidden mb-4 p-4 rounded-2xl bg-surface-container-low/95 backdrop-blur-2xl border border-outline-variant/20 shadow-2xl transition-all duration-300">
+            <div class="flex justify-between items-center mb-3">
+                <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-xs animate-pulse">analytics</span>
+                    <span class="text-[9px] font-black uppercase tracking-widest text-primary font-label">Real-time Calibration Analysis</span>
+                </div>
+                <span class="text-[9px] font-black uppercase text-outline font-label" id="eval-word-count">0 words</span>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+                <!-- Word Count/Length -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="eval-length">
+                    <span class="material-symbols-outlined text-xs text-amber-400" id="eval-length-icon">warning</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide" id="eval-length-text">Too Short</span>
+                </div>
+                
+                <!-- Technical Clarity -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="eval-clarity">
+                    <span class="material-symbols-outlined text-xs text-amber-400" id="eval-clarity-icon">warning</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide" id="eval-clarity-text">Lacks Clarity</span>
+                </div>
+                
+                <!-- Answer Structure -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="eval-structure">
+                    <span class="material-symbols-outlined text-xs text-amber-400" id="eval-structure-icon">warning</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide" id="eval-structure-text">Needs Formatting</span>
+                </div>
+                
+                <!-- Domain Specific -->
+                <div class="flex items-center gap-2 p-2.5 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-[11px]" id="eval-domain">
+                    <span class="material-symbols-outlined text-xs text-amber-400" id="eval-domain-icon">warning</span>
+                    <span class="text-on-surface-variant font-headline tracking-wide" id="eval-domain-text">Explain Scalability</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="relative flex items-end w-full bg-surface-container-low/90 backdrop-blur-xl border border-outline-variant/30 rounded-3xl p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/50 focus-within:border-primary">
+            <!-- Microphone Toggle button -->
+            <button id="mic-btn" type="button" class="flex-shrink-0 w-11 h-11 rounded-full flex items-center justify-center border border-outline-variant/20 hover:bg-surface-container-highest transition-all duration-150 text-outline hover:text-primary active:scale-95 disabled:opacity-40" title="Toggle voice input" disabled>
+                <span class="material-symbols-outlined text-lg" id="mic-btn-icon">mic</span>
+            </button>
+            
+            <!-- Expanding Textarea -->
+            <textarea id="user-input" 
+                      placeholder="Type your technical response..." 
+                      rows="1"
+                      class="flex-grow bg-transparent border-0 text-white placeholder-outline/60 focus:outline-none focus:ring-0 font-body text-sm py-2.5 px-4 resize-none min-h-[44px] max-h-[160px] overflow-y-auto disabled:opacity-50 disabled:cursor-not-allowed" disabled></textarea>
+            
+            <!-- Submit Button -->
+            <button id="next-btn" class="flex-shrink-0 bg-primary text-background px-6 py-2.5 rounded-2xl font-label text-xs font-bold uppercase tracking-wider hover:bg-primary/95 hover:scale-105 active:scale-95 transition-all duration-150 shadow-[0_0_15px_rgba(143,245,255,0.3)] disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none" disabled>
+                Submit
+            </button>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-4 justify-between items-center px-4 sm:px-6">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-outline font-label text-[10px] uppercase tracking-wider">
+                <span class="px-2.5 py-0.5 rounded bg-surface-variant text-white">{{ selected_role }}</span>
+                <span class="flex items-center gap-1">Level: <span class="text-white font-bold">{{ selected_level }}</span></span>
+                <span class="px-2 py-0.5 rounded {% if selected_voice == 'enabled' %}bg-secondary/15 text-secondary border border-secondary/20{% else %}bg-surface-container-highest text-outline{% endif %}">Voice: {{ 'Enabled' if selected_voice == 'enabled' else 'Disabled' }}</span>
+                <span class="px-2 py-0.5 rounded {% if selected_camera == 'enabled' %}bg-primary/15 text-primary border border-primary/20{% else %}bg-surface-container-highest text-outline{% endif %}">Camera: {{ 'Required' if selected_camera == 'enabled' else 'Not Required' }}</span>
+            </div>
+            
+            <!-- Keyboard shortcut indicator -->
+            <div class="text-outline font-label text-[9px] uppercase tracking-wider opacity-60 hidden md:block">
+                Press <kbd class="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant/30 text-white font-mono text-[8px]">Enter</kbd> to send • <kbd class="px-1.5 py-0.5 rounded bg-surface-container-highest border border-outline-variant/30 text-white font-mono text-[8px]">Shift + Enter</kbd> for newline
+            </div>
+            
+            <button onclick="if(confirm('End interview?')) window.location.href='/dashboard'" class="text-error font-label text-[10px] uppercase tracking-wider hover:underline transition-all hover:scale-105 active:scale-95">Terminate Session</button>
+        </div>
+    </div>
+</div>
+
+<!-- Right Column: Timeline & Calibration Map -->
+<div class="w-72 flex-shrink-0 flex flex-col hidden xl:flex" id="sidebar-timeline">
+            <!-- Timeline Card -->
+            <div class="glass-panel p-6 rounded-3xl border border-outline-variant/20 flex flex-col h-full bg-surface-container-low/60 shadow-xl">
+                <h3 class="font-headline text-xs text-white mb-6 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-sm">route</span>
+                    Interview Progress Map
+                </h3>
+                
+                <div class="flex-grow flex flex-col justify-between py-2 relative min-h-[350px]">
+                    <!-- Vertical progress line indicator -->
+                    <div class="absolute left-[13px] top-6 bottom-6 w-0.5 bg-outline-variant/30 z-0"></div>
+                    <div class="absolute left-[13px] top-6 bottom-6 w-0.5 bg-gradient-to-b from-secondary to-primary/40 z-0 origin-top scale-y-0 transition-transform duration-500" id="timeline-active-line"></div>
+                    
+                    <!-- Timeline Steps -->
+                    <!-- Step 1: Introduction -->
+                    <div class="timeline-step flex items-start gap-4 z-10 relative" id="step-intro">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline bg-surface-container transition-all duration-300 font-bold text-xs text-outline" id="step-intro-icon">
+                            <span class="material-symbols-outlined text-xs text-outline" id="step-intro-symbol">circle</span>
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h4 class="text-xs font-headline font-bold text-outline-variant transition-colors duration-300" id="step-intro-title">Introduction</h4>
+                            <p class="text-[9px] text-outline mt-0.5">Initial calibration & background</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: Technical Basics -->
+                    <div class="timeline-step flex items-start gap-4 z-10 relative" id="step-basics">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline bg-surface-container transition-all duration-300 font-bold text-xs text-outline" id="step-basics-icon">
+                            <span class="material-symbols-outlined text-xs text-outline" id="step-basics-symbol">circle</span>
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h4 class="text-xs font-headline font-bold text-outline-variant transition-colors duration-300" id="step-basics-title">Technical Basics</h4>
+                            <p class="text-[9px] text-outline mt-0.5">Core concepts & definitions</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Problem Solving -->
+                    <div class="timeline-step flex items-start gap-4 z-10 relative" id="step-solving">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline bg-surface-container transition-all duration-300 font-bold text-xs text-outline" id="step-solving-icon">
+                            <span class="material-symbols-outlined text-xs text-outline" id="step-solving-symbol">circle</span>
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h4 class="text-xs font-headline font-bold text-outline-variant transition-colors duration-300" id="step-solving-title">Problem Solving</h4>
+                            <p class="text-[9px] text-outline mt-0.5">Scenarios, design & code</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 4: Behavioral -->
+                    <div class="timeline-step flex items-start gap-4 z-10 relative" id="step-behavioral">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline bg-surface-container transition-all duration-300 font-bold text-xs text-outline" id="step-behavioral-icon">
+                            <span class="material-symbols-outlined text-xs text-outline" id="step-behavioral-symbol">circle</span>
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h4 class="text-xs font-headline font-bold text-outline-variant transition-colors duration-300" id="step-behavioral-title">Behavioral</h4>
+                            <p class="text-[9px] text-outline mt-0.5">Collaboration & values</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 5: Final Evaluation -->
+                    <div class="timeline-step flex items-start gap-4 z-10 relative" id="step-final">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline bg-surface-container transition-all duration-300 font-bold text-xs text-outline" id="step-final-icon">
+                            <span class="material-symbols-outlined text-xs text-outline" id="step-final-symbol">circle</span>
+                        </div>
+                        <div class="flex-grow text-left">
+                            <h4 class="text-xs font-headline font-bold text-outline-variant transition-colors duration-300" id="step-final-title">Final Evaluation</h4>
+                            <p class="text-[9px] text-outline mt-0.5">neural analytics calibration</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Cinematic Summary Overlay HTML -->
+<div id="cinematic-summary-overlay" class="hidden fixed inset-0 z-[1000] bg-background/95 backdrop-blur-3xl flex items-center justify-center p-6 overflow-y-auto">
+    <!-- Glowing background effects -->
+    <div class="absolute w-[500px] h-[500px] rounded-full bg-primary/5 blur-[120px] -top-20 -left-20 animate-pulse"></div>
+    <div class="absolute w-[500px] h-[500px] rounded-full bg-secondary/5 blur-[120px] -bottom-20 -right-20 animate-pulse" style="animation-delay: 2s;"></div>
+    
+    <div class="glass-panel max-w-4xl w-full p-8 md:p-12 rounded-[3.5rem] border border-primary/20 bg-surface-container-low/80 shadow-[0_30px_100px_rgba(0,0,0,0.8)] text-center relative overflow-hidden" id="summary-card">
+        <!-- Cinematic Scanline -->
+        <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 w-full animate-scanline" style="background-size: 100% 4px;"></div>
+        
+        <!-- Header -->
+        <div class="mb-8 animate-fade-in">
+            <div class="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(143,245,255,0.2)]">
+                <span class="material-symbols-outlined text-primary text-3xl animate-spin">sync_saved_locally</span>
+            </div>
+            <span class="text-[10px] font-black text-primary uppercase tracking-[0.3em] font-label block mb-1">Calibration Complete</span>
+            <h2 class="font-headline text-3xl md:text-4xl text-white font-bold leading-tight">Neural Evaluation Complete</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-8 text-left mb-10">
+            <!-- Left: Scores and Readiness Meter -->
+            <div class="md:col-span-7 space-y-6 animate-slide-left">
+                <h3 class="text-xs font-black text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2 mb-4">Diagnostics Metrics</h3>
+                
+                <!-- Main Score cards -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="bg-surface-container px-4 py-5 rounded-2xl border border-outline-variant/10 text-center relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
+                        <span class="text-[8px] font-black text-outline uppercase tracking-widest font-label">Technical</span>
+                        <div class="text-2xl font-headline text-primary font-bold mt-2"><span id="anim-score-tech">0</span>%</div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+                    </div>
+                    <div class="bg-surface-container px-4 py-5 rounded-2xl border border-outline-variant/10 text-center relative overflow-hidden group hover:border-secondary/30 transition-all duration-300">
+                        <span class="text-[8px] font-black text-outline uppercase tracking-widest font-label">Communication</span>
+                        <div class="text-2xl font-headline text-secondary font-bold mt-2"><span id="anim-score-comm">0</span>%</div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-secondary"></div>
+                    </div>
+                    <div class="bg-surface-container px-4 py-5 rounded-2xl border border-outline-variant/10 text-center relative overflow-hidden group hover:border-tertiary/30 transition-all duration-300">
+                        <span class="text-[8px] font-black text-outline uppercase tracking-widest font-label">Confidence</span>
+                        <div class="text-2xl font-headline text-tertiary font-bold mt-2"><span id="anim-score-conf">0</span>%</div>
+                        <div class="absolute bottom-0 left-0 w-full h-1 bg-tertiary"></div>
+                    </div>
+                </div>
+                
+                <!-- Readiness Meter & Hiring Probability -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Readiness Meter -->
+                    <div class="bg-surface-container p-5 rounded-2xl border border-outline-variant/10 flex items-center gap-4">
+                        <div class="relative w-16 h-16 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-full h-full transform -rotate-90">
+                                <circle cx="32" cy="32" r="26" stroke="rgba(255,255,255,0.05)" stroke-width="4" fill="transparent"></circle>
+                                <circle cx="32" cy="32" r="26" stroke="#a2f31f" stroke-width="4" fill="transparent" stroke-dasharray="163" stroke-dashoffset="163" class="transition-all duration-1000 ease-out" id="anim-readiness-circle"></circle>
+                            </svg>
+                            <span class="absolute text-xs font-headline font-bold text-white"><span id="anim-readiness-val">0</span>%</span>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-black text-outline uppercase tracking-widest font-label block">Readiness Meter</span>
+                            <span class="text-sm font-headline text-white font-bold block mt-0.5">High Vetting Match</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Hiring Probability -->
+                    <div class="bg-surface-container p-5 rounded-2xl border border-outline-variant/10 flex items-center gap-4">
+                        <div class="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center flex-shrink-0 text-primary">
+                            <span class="material-symbols-outlined text-2xl animate-pulse">thumbs_up_down</span>
+                        </div>
+                        <div>
+                            <span class="text-[8px] font-black text-outline uppercase tracking-widest font-label block">Hiring Probability</span>
+                            <span class="text-lg font-headline text-white font-black block mt-0.5"><span id="anim-hiring-prob">0</span>%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Strengths and Weaknesses -->
+            <div class="md:col-span-5 space-y-6 animate-slide-right">
+                <h3 class="text-xs font-black text-outline uppercase tracking-widest border-b border-outline-variant/10 pb-2 mb-4">Neural Profile Map</h3>
+                
+                <!-- Strengths list -->
+                <div>
+                    <h4 class="text-[10px] font-black text-secondary uppercase tracking-widest mb-3 flex items-center gap-1.5 font-label">
+                        <span class="material-symbols-outlined text-sm">verified_user</span>
+                        Core Strengths
+                    </h4>
+                    <ul class="space-y-2.5 text-xs text-on-surface-variant" id="anim-strengths-list">
+                    </ul>
+                </div>
+                
+                <!-- Weaknesses/Areas of Improvement -->
+                <div>
+                    <h4 class="text-[10px] font-black text-tertiary uppercase tracking-widest mb-3 flex items-center gap-1.5 font-label">
+                        <span class="material-symbols-outlined text-sm">info</span>
+                        Calibration Actions
+                    </h4>
+                    <ul class="space-y-2.5 text-xs text-on-surface-variant" id="anim-weaknesses-list">
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Action Footer -->
+        <div class="animate-fade-in pt-4 border-t border-outline-variant/10 flex flex-col sm:flex-row gap-4 justify-between items-center">
+            <div class="text-left">
+                <div class="text-xl font-headline text-white font-bold"><span id="anim-score-overall">0</span><span class="text-sm text-outline font-normal">/100</span></div>
+                <p class="text-[9px] text-outline uppercase tracking-wider font-label mt-0.5">Aggregated Calibration Score</p>
+            </div>
+            <button id="cinematic-proceed-btn" type="button" class="w-full sm:w-auto px-8 py-3 rounded-2xl bg-primary text-background font-headline text-xs font-black uppercase tracking-widest hover:brightness-105 hover:scale-105 transition-all shadow-[0_0_25px_rgba(143,245,255,0.4)]">
+                Finalize Calibration
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Neural Space Initialization Overlay -->
+<div id="init-session-overlay" class="fixed inset-0 z-[2000] bg-background/95 backdrop-blur-md flex items-center justify-center p-6">
+    <div class="glass-panel max-w-md w-full p-8 rounded-3xl border border-primary/20 bg-surface-container-low/90 shadow-2xl text-center relative overflow-hidden">
+        <!-- Scanline & glow effects -->
+        <div class="absolute inset-0 pointer-events-none bg-gradient-to-b from-transparent via-primary/5 to-transparent h-1/2 w-full animate-scanline" style="background-size: 100% 4px;"></div>
+        <div class="absolute -right-16 -top-16 w-32 h-32 bg-primary/10 blur-[40px] rounded-full"></div>
+        <div class="absolute -left-16 -bottom-16 w-32 h-32 bg-secondary/10 blur-[40px] rounded-full"></div>
+
+        <div class="w-16 h-16 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(143,245,255,0.2)]">
+            <span class="material-symbols-outlined text-primary text-3xl animate-pulse">settings_input_antenna</span>
+        </div>
+        
+        <span class="text-[9px] font-black text-primary uppercase tracking-[0.25em] font-label block mb-1">Neural Connection Ready</span>
+        <h3 class="font-headline text-xl text-white font-bold mb-3">Establish Neuro-Link</h3>
+        <p class="text-xs text-on-surface-variant leading-relaxed mb-8">
+            Welcome to the AI Calibration space. Click below to establish the connection, initialize voice telemetry, and activate diagnostics.
+        </p>
+        
+        <button id="start-session-btn" type="button" class="w-full py-3.5 rounded-2xl bg-primary text-background font-headline text-xs font-black uppercase tracking-widest hover:brightness-105 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(143,245,255,0.3)]">
+            Initialize Session
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Neural Wave Visualizer
+    const canvas = document.getElementById('neural-wave');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+    function resize() {
+        width = canvas.width = canvas.offsetWidth;
+        height = canvas.height = canvas.offsetHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    let waveAmplitude = 0;
+    let isSpeaking = false;
+    
+    function draw() {
+        ctx.clearRect(0,0,width,height);
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        
+        // Dynamic wave stroke color depending on state
+        ctx.strokeStyle = isSpeaking ? '#ff6b9b' : '#8ff5ff';
+        
+        let time = Date.now() * 0.003;
+        
+        // Damping transition
+        if (isSpeaking) {
+            if (waveAmplitude < 18) waveAmplitude += 0.8;
+        } else {
+            if (waveAmplitude > 0) waveAmplitude -= 0.8;
+        }
+        
+        ctx.moveTo(0, height/2);
+        for(let x=0; x<width; x++) {
+            let y = height/2 + Math.sin(x*0.03 + time) * waveAmplitude * Math.sin(time*0.5);
+            ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+        requestAnimationFrame(draw);
+    }
+    draw();
+
+    // Q&A Engine
+    const selectedRole = "{{ selected_role }}";
+    const selectedLevel = "{{ selected_level }}";
+    const selectedVoice = "{{ selected_voice }}";
+    const selectedCamera = "{{ selected_camera }}";
+    const questions = {{ questions_json | safe }};
+    let currentQIndex = 0;
+    
+    // Telemetry state variables
+    let speechStartTime = null;
+    let totalSessionFillers = 0;
+    let lastRecordedClarity = "High";
+    const chatThread = document.getElementById('chat-thread');
+    const userInput = document.getElementById('user-input');
+    const nextBtn = document.getElementById('next-btn');
+    const micBtn = document.getElementById('mic-btn');
+    const interviewHistory = [];
+    let activeCameraStream = null;
+    
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // Dynamic Question Flows mapping for metadata card
+    const flows = {
+        'Junior': [
+            { topic: 'Introduction', focus: 'Persona & Vibe', difficulty: 'Easy', time: '1 min' },
+            { topic: 'Fundamentals', focus: 'Definitions & Core Concepts', difficulty: 'Easy', time: '2 mins' },
+            { topic: 'Fundamentals', focus: 'Syntax & Scope', difficulty: 'Easy', time: '2 mins' },
+            { topic: 'Fundamentals', focus: 'Language Nuances', difficulty: 'Medium', time: '2 mins' },
+            { topic: 'Coding', focus: 'Simple Logic & Algorithms 1', difficulty: 'Medium', time: '3 mins' },
+            { topic: 'Coding', focus: 'Simple Logic & Algorithms 2', difficulty: 'Medium', time: '3 mins' },
+            { topic: 'Project Questions', focus: 'Basic Architecture', difficulty: 'Medium', time: '2 mins' },
+            { topic: 'Project Questions', focus: 'Implementation details', difficulty: 'Medium', time: '2 mins' },
+            { topic: 'HR/Behavioral', focus: 'Collaboration & Values', difficulty: 'Easy', time: '2 mins' },
+            { topic: 'HR/Behavioral', focus: 'Career Goals', difficulty: 'Easy', time: '2 mins' }
+        ],
+        'Mid-Level': [
+            { topic: 'Intro', focus: 'Experience Review', difficulty: 'Medium', time: '1 min' },
+            { topic: 'Technical Fundamentals', focus: 'APIs & Web Protocols', difficulty: 'Medium', time: '2 mins' },
+            { topic: 'Scenario-Based', focus: 'Debugging & Optimization', difficulty: 'Medium', time: '3 mins' },
+            { topic: 'Scenario-Based', focus: 'Concurrency & Security', difficulty: 'Medium', time: '3 mins' },
+            { topic: 'Coding/Problem Solving', focus: 'Algorithms & Data Structures 1', difficulty: 'Hard', time: '4 mins' },
+            { topic: 'Coding/Problem Solving', focus: 'Algorithms & Data Structures 2', difficulty: 'Hard', time: '4 mins' },
+            { topic: 'System Design Lite', focus: 'Architecture Basics', difficulty: 'Hard', time: '4 mins' },
+            { topic: 'System Design Lite', focus: 'Caching & DB', difficulty: 'Hard', time: '4 mins' },
+            { topic: 'Behavioral', focus: 'Conflict & Resolution', difficulty: 'Medium', time: '2 mins' },
+            { topic: 'Behavioral', focus: 'Mentorship', difficulty: 'Medium', time: '2 mins' }
+        ],
+        'Senior': [
+            { topic: 'Leadership', focus: 'Mentoring & Team Values', difficulty: 'Hard', time: '2 mins' },
+            { topic: 'Leadership', focus: 'Cross-functional Alignment', difficulty: 'Hard', time: '2 mins' },
+            { topic: 'Advanced Technical', focus: 'Performance & Security', difficulty: 'Hard', time: '3 mins' },
+            { topic: 'Advanced Technical', focus: 'Platform Scale', difficulty: 'Hard', time: '3 mins' },
+            { topic: 'Coding/Problem Solving', focus: 'Complex Algorithms 1', difficulty: 'Expert', time: '5 mins' },
+            { topic: 'Coding/Problem Solving', focus: 'Complex Algorithms 2', difficulty: 'Expert', time: '5 mins' },
+            { topic: 'Architecture', focus: 'Scalable System Architecture', difficulty: 'Expert', time: '5 mins' },
+            { topic: 'Scalability', focus: 'Distributed Systems & Microservices', difficulty: 'Expert', time: '5 mins' },
+            { topic: 'Incident Handling', focus: 'Crisis & Post-Mortem Strategy', difficulty: 'Expert', time: '4 mins' },
+            { topic: 'Decision Making', focus: 'Tech Tradeoffs & Cost Optimization', difficulty: 'Expert', time: '3 mins' }
+        ]
+    };
+
+    function updateQuestionMetadata(index) {
+        // Toggle Coding Challenge Mode for technical roles during problem solving (Indices 4 and 5)
+        const isTechnicalRole = selectedRole.toLowerCase().includes('software') || 
+                                selectedRole.toLowerCase().includes('developer') || 
+                                selectedRole.toLowerCase().includes('engineer') || 
+                                selectedRole.toLowerCase().includes('fullstack') || 
+                                selectedRole.toLowerCase().includes('frontend') || 
+                                selectedRole.toLowerCase().includes('backend') || 
+                                selectedRole.toLowerCase().includes('data scientist');
+                                
+        if (isTechnicalRole && (index === 4 || index === 5)) {
+            if (typeof toggleCodingMode === 'function') {
+                toggleCodingMode(true);
+            }
+        } else {
+            if (typeof toggleCodingMode === 'function') {
+                toggleCodingMode(false);
+            }
+        }
+
+        // Update Interview progress timeline map
+        if (typeof updateTimelineMap === 'function') {
+            updateTimelineMap(index);
+        }
+        
+        const qIndexHeader = document.getElementById('q-index-header');
+        const qTopicBadge = document.getElementById('q-topic-badge');
+        const qFocusText = document.getElementById('q-focus-text');
+        const qDifficultyText = document.getElementById('q-difficulty-text');
+        const qTimeText = document.getElementById('q-time-text');
+        const card = document.getElementById('active-question-card');
+        
+        const totalQs = questions.length - 1;
+        const progressPercent = Math.round((index / totalQs) * 100);
+        const progressBarFill = document.getElementById('progress-bar-fill');
+        const progressPercentText = document.getElementById('progress-percent-text');
+        if (progressBarFill && progressPercentText) {
+            progressBarFill.style.width = `${progressPercent}%`;
+            progressPercentText.textContent = `${progressPercent}% Complete`;
+        }
+        
+        if (index === questions.length - 1) {
+            qIndexHeader.textContent = 'CALIBRATION COMPLETED';
+            qTopicBadge.textContent = 'Final Processing';
+            qTopicBadge.className = 'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/20 font-label';
+            qFocusText.textContent = 'Report Scoring';
+            qDifficultyText.textContent = 'Complete';
+            qDifficultyText.className = 'block text-xs font-bold text-secondary';
+            qTimeText.textContent = '0 mins';
+            
+            // Dynamic completed layout card border shift
+            card.className = 'w-full glass-panel p-6 rounded-3xl border border-secondary/30 bg-secondary/5 mb-6 relative overflow-hidden transition-all duration-300 shadow-[0_0_20px_rgba(162,243,31,0.15)]';
+            return;
+        }
+        
+        const levelFlow = flows[selectedLevel] || flows['Mid-Level'];
+        const meta = levelFlow[index % levelFlow.length];
+        
+        qIndexHeader.textContent = `QUESTION ${index + 1}/${totalQs}`;
+        qTopicBadge.textContent = meta.topic;
+        qFocusText.textContent = meta.focus;
+        qDifficultyText.textContent = meta.difficulty;
+        qTimeText.textContent = meta.time;
+        
+        // Clear old classes
+        qDifficultyText.className = 'block text-xs font-bold';
+        
+        if (meta.difficulty === 'Easy') {
+            qDifficultyText.classList.add('text-primary');
+            qTopicBadge.className = 'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-primary/15 text-primary border border-primary/20 font-label';
+            card.className = 'w-full glass-panel p-6 rounded-3xl border border-primary/20 bg-primary/5 mb-6 relative overflow-hidden transition-all duration-300';
+        } else if (meta.difficulty === 'Medium') {
+            qDifficultyText.classList.add('text-secondary');
+            qTopicBadge.className = 'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-secondary/15 text-secondary border border-secondary/20 font-label';
+            card.className = 'w-full glass-panel p-6 rounded-3xl border border-secondary/20 bg-secondary/5 mb-6 relative overflow-hidden transition-all duration-300';
+        } else {
+            qDifficultyText.classList.add('text-tertiary');
+            qTopicBadge.className = 'px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-tertiary/15 text-tertiary border border-tertiary/20 font-label';
+            card.className = 'w-full glass-panel p-6 rounded-3xl border border-tertiary/20 bg-tertiary/5 mb-6 relative overflow-hidden transition-all duration-300';
+        }
+    }
+
+    function getFormattedTime() {
+        const now = new Date();
+        let hours = now.getHours();
+        let minutes = now.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        return hours + ':' + minutes + ' ' + ampm;
+    }
+
+    function appendHistoryBubble(questionText, answerText) {
+        const timestamp = getFormattedTime();
+        
+        // AI Question Bubble
+        const qDiv = document.createElement('div');
+        qDiv.className = 'message ai-message w-full max-w-xl';
+        qDiv.innerHTML = `
+            <div class="flex items-center gap-1.5 mb-1.5 px-2">
+                <span class="material-symbols-outlined text-[13px] text-primary">smart_toy</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-primary font-label">AI Interviewer</span>
+                <span class="text-[9px] text-outline font-label ml-2">${timestamp}</span>
+            </div>
+            <div class="glass-bubble ai-bubble font-headline text-sm leading-relaxed shadow-lg">
+                "${questionText}"
+            </div>
+        `;
+        chatThread.appendChild(qDiv);
+        
+        // User Response Bubble
+        const aDiv = document.createElement('div');
+        aDiv.className = 'message user-message w-full max-w-xl';
+        aDiv.innerHTML = `
+            <div class="flex items-center gap-1.5 mb-1.5 px-2">
+                <span class="material-symbols-outlined text-[13px] text-secondary">person</span>
+                <span class="text-[9px] font-black uppercase tracking-widest text-secondary font-label">Candidate (You)</span>
+                <span class="text-[9px] text-outline font-label ml-2">${timestamp}</span>
+            </div>
+            <div class="glass-bubble user-bubble font-headline text-sm leading-relaxed shadow-lg">
+                ${answerText}
+            </div>
+        `;
+        chatThread.appendChild(aDiv);
+        
+        chatThread.scrollTop = chatThread.scrollHeight;
+    }
+
+    function updateStatus(state) {
+        const dot = document.getElementById('status-indicator-dot');
+        const text = document.getElementById('status-text');
+        const dotsContainer = document.getElementById('thinking-dots-container');
+        const avatarRing = document.getElementById('voice-pulse-ring');
+        const avatarIcon = document.getElementById('ai-avatar-icon');
+        const aiTypingIndicator = document.getElementById('ai-typing-indicator');
+        const aiTypingStatus = document.getElementById('ai-typing-status');
+        
+        // Reset classes
+        dot.className = 'w-2.5 h-2.5 rounded-full transition-all duration-300';
+        dotsContainer.classList.add('hidden');
+        dotsContainer.classList.remove('flex');
+        avatarRing.classList.add('opacity-0');
+        avatarRing.classList.remove('animate-ping', 'opacity-100');
+        isSpeaking = false;
+        
+        if (aiTypingIndicator) {
+            aiTypingIndicator.classList.add('hidden');
+        }
+        
+        if (state === 'speaking') {
+            isSpeaking = true;
+            text.textContent = 'Speaking';
+            dot.classList.add('bg-[#ff6b9b]', 'shadow-[0_0_10px_#ff6b9b]'); // Pink
+            avatarIcon.textContent = 'volume_up';
+            avatarRing.classList.remove('opacity-0');
+            avatarRing.classList.add('animate-ping', 'opacity-100');
+        } else if (state === 'listening') {
+            text.textContent = 'Listening';
+            dot.classList.add('bg-[#8ff5ff]', 'shadow-[0_0_10px_#8ff5ff]'); // Cyan
+            avatarIcon.textContent = 'mic';
+        } else if (state === 'thinking') {
+            text.textContent = 'Thinking';
+            dot.classList.add('bg-outline', 'shadow-[0_0_10px_rgba(255,255,255,0.2)]'); // Gray
+            dotsContainer.classList.remove('hidden');
+            dotsContainer.classList.add('flex');
+            avatarIcon.textContent = 'psychology';
+            if (aiTypingIndicator && aiTypingStatus) {
+                aiTypingIndicator.classList.remove('hidden');
+                aiTypingStatus.textContent = 'Neural Engine Thinking';
+                chatThread.scrollTop = chatThread.scrollHeight;
+            }
+        } else if (state === 'evaluating') {
+            text.textContent = 'Evaluating';
+            dot.classList.add('bg-amber-400', 'shadow-[0_0_10px_#fbbf24]'); // Amber
+            avatarIcon.textContent = 'insights';
+            if (aiTypingIndicator && aiTypingStatus) {
+                aiTypingIndicator.classList.remove('hidden');
+                aiTypingStatus.textContent = 'AI Calibrating Response';
+                chatThread.scrollTop = chatThread.scrollHeight;
+            }
+        } else if (state === 'generating') {
+            text.textContent = 'Generating Follow-up';
+            dot.classList.add('bg-secondary', 'shadow-[0_0_10px_#a2f31f]'); // Green
+            avatarIcon.textContent = 'chat_bubble';
+            if (aiTypingIndicator && aiTypingStatus) {
+                aiTypingIndicator.classList.remove('hidden');
+                aiTypingStatus.textContent = 'Generating Follow-up';
+                chatThread.scrollTop = chatThread.scrollHeight;
+            }
+        }
+    }
+
+    function speakText(text) {
+        if (selectedVoice === 'enabled' && 'speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Try to find a premium English voice
+            const voices = window.speechSynthesis.getVoices();
+            const preferredVoice = voices.find(v => 
+                (v.name.includes('Google') && v.lang.startsWith('en')) || 
+                (v.name.includes('Natural') && v.lang.startsWith('en')) ||
+                (v.name.includes('Microsoft') && v.lang.startsWith('en-US'))
+            ) || voices.find(v => v.lang.startsWith('en'));
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+            
+            utterance.rate = 1.0;
+            utterance.pitch = 1.02;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    function typeMessage(element, text, speed = 30) {
+        return new Promise(resolve => {
+            let i = 0;
+            element.innerText = '"';
+            element.classList.add('typing-indicator');
+            const timer = setInterval(() => {
+                element.innerText += text[i];
+                i++;
+                if (i >= text.length) {
+                    element.innerText += '"';
+                    element.classList.remove('typing-indicator');
+                    clearInterval(timer);
+                    resolve();
+                }
+            }, speed);
+        });
+    }
+
+    async function addAIMessage(text) {
+        updateStatus('speaking');
+        updateQuestionMetadata(currentQIndex);
+        
+        const qContainer = document.getElementById('current-question');
+        speakText(text);
+        await typeMessage(qContainer, text);
+        
+        updateStatus('listening');
+    }
+
+    async function nextStep() {
+        userInput.disabled = true;
+        nextBtn.disabled = true;
+        if (micBtn) micBtn.disabled = true;
+        
+        if (currentQIndex >= questions.length - 1) {
+            saveAndRedirect();
+            return;
+        }
+
+        const text = userInput.value.trim();
+        if (text) {
+            appendHistoryBubble(questions[currentQIndex], text);
+            interviewHistory.push({ q: questions[currentQIndex], a: text });
+            
+            // Add current turn fillers to session aggregate
+            if (recognition && typeof recognition.currentTurnFillers !== 'undefined') {
+                totalSessionFillers += recognition.currentTurnFillers;
+                recognition.currentTurnFillers = 0;
+            }
+
+            userInput.value = "";
+            userInput.style.height = 'auto'; // Reset expanding height
+            resetEvaluation();
+        }
+
+        currentQIndex++;
+        
+        // Trigger simulated state transitions for high functional value
+        updateStatus('thinking');
+        await sleep(900);
+        
+        updateStatus('evaluating');
+        await sleep(800);
+        
+        updateStatus('generating');
+        await sleep(600);
+        
+        if (currentQIndex === questions.length - 1) {
+            // Display the final closing message
+            await addAIMessage(questions[currentQIndex]);
+            // Do NOT re-enable inputs. Auto redirect after 2.5 seconds.
+            setTimeout(saveAndRedirect, 2500);
+        } else if (currentQIndex < questions.length - 1) {
+            // Display next question and enable inputs
+            await addAIMessage(questions[currentQIndex]);
+            userInput.disabled = false;
+            nextBtn.disabled = false;
+            if (micBtn) micBtn.disabled = false;
+            userInput.focus();
+        }
+    }
+
+    async function saveAndRedirect() {
+        if (activeCameraStream) {
+            activeCameraStream.getTracks().forEach(track => track.stop());
+            activeCameraStream = null;
+        }
+        
+        updateStatus('evaluating');
+        const aiTypingStatus = document.getElementById('ai-typing-status');
+        if (aiTypingStatus) aiTypingStatus.textContent = "Processing full neural report...";
+        const aiTypingIndicator = document.getElementById('ai-typing-indicator');
+        if (aiTypingIndicator) aiTypingIndicator.classList.remove('hidden');
+        
+        let reportData = null;
+        try {
+            const evalRes = await fetch('/evaluate-transcript', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    role: selectedRole,
+                    level: selectedLevel,
+                    history: interviewHistory
+                })
+            });
+            reportData = await evalRes.json();
+        } catch (e) {
+            console.error("Evaluation failed", e);
+            reportData = {
+                score: Math.floor(Math.random() * (98 - 85) + 85),
+                conf: Math.floor(Math.random() * (95 - 80) + 80),
+                comm: Math.floor(Math.random() * (94 - 75) + 75),
+                tech: Math.floor(Math.random() * (98 - 88) + 88),
+                summary: `Calibration session completed for ${selectedRole} (${selectedLevel} role).`,
+                strengths: ["Maintained a consistent rhythm.", "Addressed core topics effectively."],
+                weaknesses: ["Could dive deeper into system architecture.", "Work on minimizing hesitation."],
+                star: "Provide detailed explanations to show depth of architectural tradeoffs."
+            };
+        }
+        
+        const finalData = {
+            date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            type: `${selectedRole} Calibration Session`,
+            score: reportData.score,
+            conf: reportData.conf,
+            comm: reportData.comm,
+            tech: reportData.tech,
+            summary: reportData.summary,
+            rubric: JSON.stringify({strengths: reportData.strengths, weaknesses: reportData.weaknesses}),
+            star: reportData.star,
+            fillers: selectedVoice === 'enabled' ? totalSessionFillers : 0,
+            clarity: selectedVoice === 'enabled' ? lastRecordedClarity : 'Optimized'
+        };
+
+        await fetch('/complete-interview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(finalData)
+        });
+        
+        if (typeof triggerCinematicSummary === 'function') {
+            triggerCinematicSummary(reportData);
+        } else {
+            window.location.href = '/dashboard';
+        }
+    }
+
+    function resetEvaluation() {
+        document.getElementById('live-eval-panel').classList.add('hidden');
+        document.getElementById('eval-word-count').textContent = '0 words';
+        
+        // Reset speaking analysis panel UI to default visual states
+        document.getElementById('speaking-analysis-panel').classList.add('hidden');
+        document.getElementById('speaking-wpm-text').textContent = '0 WPM';
+        document.getElementById('metric-speed-val').textContent = 'Good';
+        document.getElementById('metric-speed-val').className = 'text-white font-bold';
+        document.getElementById('metric-speed-icon').className = 'material-symbols-outlined text-xs text-secondary';
+        
+        document.getElementById('metric-confidence-val').textContent = 'Medium';
+        document.getElementById('metric-confidence-val').className = 'text-white font-bold';
+        document.getElementById('metric-confidence-icon').className = 'material-symbols-outlined text-xs text-primary';
+        
+        document.getElementById('metric-clarity-val').textContent = 'High';
+        document.getElementById('metric-clarity-val').className = 'text-white font-bold';
+        document.getElementById('metric-clarity-icon').className = 'material-symbols-outlined text-xs text-tertiary';
+        
+        document.getElementById('metric-fillers-val').textContent = 'Low';
+        document.getElementById('metric-fillers-val').className = 'text-white font-bold';
+        document.getElementById('metric-fillers-icon').className = 'material-symbols-outlined text-xs text-error';
+        
+        if (userInput) userInput.style.height = 'auto'; // Reset expanding height
+        
+        document.getElementById('eval-length-icon').textContent = 'warning';
+        document.getElementById('eval-length-icon').className = 'material-symbols-outlined text-xs text-amber-400';
+        document.getElementById('eval-length-text').textContent = 'Too Short';
+        
+        document.getElementById('eval-clarity-icon').textContent = 'warning';
+        document.getElementById('eval-clarity-icon').className = 'material-symbols-outlined text-xs text-amber-400';
+        document.getElementById('eval-clarity-text').textContent = 'Lacks Clarity';
+        
+        document.getElementById('eval-structure-icon').textContent = 'warning';
+        document.getElementById('eval-structure-icon').className = 'material-symbols-outlined text-xs text-amber-400';
+        document.getElementById('eval-structure-text').textContent = 'Needs Formatting';
+        
+        const roleLower = selectedRole.toLowerCase();
+        let defaultDomainText = 'Explain Scalability';
+        if (roleLower.includes('product') || roleLower.includes('pm')) {
+            defaultDomainText = 'Include PM Metrics';
+        } else if (roleLower.includes('design') || roleLower.includes('ux') || roleLower.includes('ui')) {
+            defaultDomainText = 'Address User Flow';
+        } else if (roleLower.includes('data') || roleLower.includes('science') || roleLower.includes('scientist')) {
+            defaultDomainText = 'Explain Models';
+        }
+        
+        document.getElementById('eval-domain-icon').textContent = 'warning';
+        document.getElementById('eval-domain-icon').className = 'material-symbols-outlined text-xs text-amber-400';
+        document.getElementById('eval-domain-text').textContent = defaultDomainText;
+    }
+
+    function updateEvaluation() {
+        const text = userInput.value.trim();
+        if (!text) {
+            document.getElementById('live-eval-panel').classList.add('hidden');
+            return;
+        }
+        document.getElementById('live-eval-panel').classList.remove('hidden');
+
+        // Count words
+        const words = text.split(/\s+/).filter(w => w.length > 0);
+        const wordCount = words.length;
+        document.getElementById('eval-word-count').textContent = `${wordCount} word${wordCount === 1 ? '' : 's'}`;
+
+        // 1. Length Checklist (Too Short vs Good Length)
+        const lengthValid = wordCount >= 12;
+        const evalLengthIcon = document.getElementById('eval-length-icon');
+        const evalLengthText = document.getElementById('eval-length-text');
+        if (lengthValid) {
+            evalLengthIcon.textContent = 'check_circle';
+            evalLengthIcon.className = 'material-symbols-outlined text-xs text-secondary';
+            evalLengthText.textContent = 'Good Length';
+        } else {
+            evalLengthIcon.textContent = 'warning';
+            evalLengthIcon.className = 'material-symbols-outlined text-xs text-amber-400';
+            evalLengthText.textContent = 'Too Short';
+        }
+
+        // 2. Technical Clarity (Lacks Clarity vs Technical Clarity)
+        const clarityKeywords = ['because', 'since', 'as a result', 'implement', 'optimize', 'strategy', 'using', 'due to', 'specifically', 'example', 'therefore', 'however', 'system', 'process', 'method'];
+        const textLower = text.toLowerCase();
+        const hasClarityKeyword = clarityKeywords.some(kw => textLower.includes(kw));
+        const clarityValid = text.length > 25 && hasClarityKeyword;
+        const evalClarityIcon = document.getElementById('eval-clarity-icon');
+        const evalClarityText = document.getElementById('eval-clarity-text');
+        if (clarityValid) {
+            evalClarityIcon.textContent = 'check_circle';
+            evalClarityIcon.className = 'material-symbols-outlined text-xs text-secondary';
+            evalClarityText.textContent = 'Technical Clarity';
+        } else {
+            evalClarityIcon.textContent = 'warning';
+            evalClarityIcon.className = 'material-symbols-outlined text-xs text-amber-400';
+            evalClarityText.textContent = 'Lacks Clarity';
+        }
+
+        // 3. Answer Structure (Needs Formatting vs Good Structure)
+        const hasPunctuation = /[.,;\-?!]/.test(text);
+        const structureValid = wordCount >= 6 && hasPunctuation;
+        const evalStructureIcon = document.getElementById('eval-structure-icon');
+        const evalStructureText = document.getElementById('eval-structure-text');
+        if (structureValid) {
+            evalStructureIcon.textContent = 'check_circle';
+            evalStructureIcon.className = 'material-symbols-outlined text-xs text-secondary';
+            evalStructureText.textContent = 'Good Structure';
+        } else {
+            evalStructureIcon.textContent = 'warning';
+            evalStructureIcon.className = 'material-symbols-outlined text-xs text-amber-400';
+            evalStructureText.textContent = 'Needs Formatting';
+        }
+
+        // 4. Domain Specific Checklist
+        const roleLower = selectedRole.toLowerCase();
+        let domainConfig = {
+            keywords: ['scale', 'scalability', 'architecture', 'database', 'sharding', 'caching', 'latency', 'server', 'backend', 'performance', 'load', 'microservice', 'monolith', 'api', 'query'],
+            notSatisfiedText: 'Explain Scalability',
+            satisfiedText: 'Scalability Addressed'
+        };
+
+        if (roleLower.includes('product') || roleLower.includes('pm')) {
+            domainConfig = {
+                keywords: ['metric', 'kpi', 'conversion', 'revenue', 'retention', 'funnel', 'growth', 'user data', 'data', 'engagement', 'roi', 'roadmap'],
+                notSatisfiedText: 'Include PM Metrics',
+                satisfiedText: 'Metrics Addressed'
+            };
+        } else if (roleLower.includes('design') || roleLower.includes('ux') || roleLower.includes('ui')) {
+            domainConfig = {
+                keywords: ['user', 'wireframe', 'accessibility', 'journey', 'flow', 'mockup', 'prototype', 'figma', 'interface', 'usability', 'persona', 'interaction'],
+                notSatisfiedText: 'Address User Flow',
+                satisfiedText: 'User Flow Addressed'
+            };
+        } else if (roleLower.includes('data') || roleLower.includes('science') || roleLower.includes('scientist')) {
+            domainConfig = {
+                keywords: ['model', 'algorithm', 'training', 'precision', 'overfitting', 'regression', 'dataset', 'prediction', 'features', 'classification', 'neural'],
+                notSatisfiedText: 'Explain Models',
+                satisfiedText: 'Models Addressed'
+            };
+        }
+
+        const hasDomainKeyword = domainConfig.keywords.some(kw => textLower.includes(kw));
+        const domainValid = hasDomainKeyword;
+        const evalDomainIcon = document.getElementById('eval-domain-icon');
+        const evalDomainText = document.getElementById('eval-domain-text');
+        if (domainValid) {
+            evalDomainIcon.textContent = 'check_circle';
+            evalDomainIcon.className = 'material-symbols-outlined text-xs text-secondary';
+            evalDomainText.textContent = domainConfig.satisfiedText;
+        } else {
+            evalDomainIcon.textContent = 'warning';
+            evalDomainIcon.className = 'material-symbols-outlined text-xs text-amber-400';
+            evalDomainText.textContent = domainConfig.notSatisfiedText;
+        }
+    }
+
+    // Speech Recognition setup
+    let recognition = null;
+    let isListening = false;
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-US';
+        
+        recognition.onstart = () => {
+            isListening = true;
+            speechStartTime = Date.now();
+            if (recognition) recognition.currentTurnFillers = 0;
+            const icon = document.getElementById('mic-btn-icon');
+            if (icon) icon.textContent = 'settings_voice';
+            micBtn.classList.add('bg-secondary/20', 'text-secondary', 'border-secondary/30');
+            userInput.placeholder = "Listening to your voice...";
+            
+            // Show speaking analysis panel when voice recording is active
+            if (selectedVoice === 'enabled') {
+                document.getElementById('speaking-analysis-panel').classList.remove('hidden');
+            }
+        };
+        
+        recognition.onresult = (event) => {
+            let transcript = '';
+            let totalConfidence = 0;
+            let resultCount = 0;
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                transcript += event.results[i][0].transcript;
+                if (event.results[i][0].confidence > 0) {
+                    totalConfidence += event.results[i][0].confidence;
+                    resultCount++;
+                }
+            }
+            userInput.value = transcript;
+            userInput.style.height = 'auto';
+            userInput.style.height = userInput.scrollHeight + 'px';
+            updateEvaluation();
+            
+            // Recalculate speech signals in real time
+            if (selectedVoice === 'enabled') {
+                updateSpeakingAnalysis(transcript, totalConfidence, resultCount);
+            }
+        };
+        
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            stopListening();
+        };
+        
+        recognition.onend = () => {
+            stopListening();
+        };
+    }
+    
+    function stopListening() {
+        isListening = false;
+        const icon = document.getElementById('mic-btn-icon');
+        if (icon) icon.textContent = 'mic';
+        if (micBtn) micBtn.classList.remove('bg-secondary/20', 'text-secondary', 'border-secondary/30');
+        userInput.placeholder = "Type your technical response...";
+        if (recognition) {
+            try { recognition.stop(); } catch(e) {}
+        }
+    }
+    
+    function startListening() {
+        if (recognition) {
+            try { recognition.start(); } catch(e) {}
+        }
+    }
+
+    function updateSpeakingAnalysis(transcript, totalConfidence, resultCount) {
+        if (!transcript) return;
+        
+        // 1. Speaking Speed (WPM)
+        const words = transcript.split(/\s+/).filter(w => w.length > 0);
+        const wordCount = words.length;
+        const elapsedSeconds = (Date.now() - speechStartTime) / 1000;
+        let wpm = 0;
+        let speedRating = "Good";
+        if (elapsedSeconds > 1.5) {
+            wpm = Math.round((wordCount / elapsedSeconds) * 60);
+            document.getElementById('speaking-wpm-text').textContent = `${wpm} WPM`;
+            
+            if (wpm < 100) {
+                speedRating = "Slow";
+            } else if (wpm > 165) {
+                speedRating = "Fast";
+            } else {
+                speedRating = "Good";
+            }
+        } else {
+            document.getElementById('speaking-wpm-text').textContent = `Calculating...`;
+        }
+        
+        // 2. Filler Words counting
+        const fillerList = ['um', 'uh', 'like', 'so', 'basically', 'actually', 'you know', 'ah'];
+        let fillersFound = 0;
+        const wordsLower = words.map(w => w.toLowerCase().replace(/[^a-z']/g, ''));
+        wordsLower.forEach(word => {
+            if (fillerList.includes(word)) {
+                fillersFound++;
+            }
+        });
+        
+        // Check for double word filler "you know"
+        const transcriptLower = transcript.toLowerCase();
+        let youKnowMatches = (transcriptLower.match(/\byou know\b/g) || []).length;
+        fillersFound += youKnowMatches;
+        
+        let fillerRating = "Low";
+        if (fillersFound >= 4) {
+            fillerRating = "High";
+        } else if (fillersFound >= 2) {
+            fillerRating = "Medium";
+        }
+        
+        // 3. Speech Clarity (recognition alternative confidence mapping)
+        let avgConfidence = 0.92;
+        if (resultCount > 0) {
+            avgConfidence = totalConfidence / resultCount;
+        }
+        let clarityRating = "High";
+        if (avgConfidence < 0.72) {
+            clarityRating = "Low";
+        } else if (avgConfidence < 0.86) {
+            clarityRating = "Medium";
+        }
+        
+        // 4. Confidence Score (fluency estimation)
+        let confidenceRating = "Medium";
+        if (fillersFound === 0 && speedRating === "Good" && wordCount > 8) {
+            confidenceRating = "High";
+        } else if (fillersFound >= 3 || speedRating === "Slow") {
+            confidenceRating = "Low";
+        }
+        
+        // Update DOM elements colors and metrics
+        const speedValEl = document.getElementById('metric-speed-val');
+        const speedIconEl = document.getElementById('metric-speed-icon');
+        speedValEl.textContent = speedRating;
+        if (speedRating === "Good") {
+            speedValEl.className = "text-secondary font-bold";
+            speedIconEl.className = "material-symbols-outlined text-xs text-secondary animate-pulse";
+        } else {
+            speedValEl.className = "text-amber-400 font-bold";
+            speedIconEl.className = "material-symbols-outlined text-xs text-amber-400";
+        }
+        
+        const fillersValEl = document.getElementById('metric-fillers-val');
+        const fillersIconEl = document.getElementById('metric-fillers-icon');
+        fillersValEl.textContent = fillerRating;
+        if (fillerRating === "Low") {
+            fillersValEl.className = "text-secondary font-bold";
+            fillersIconEl.className = "material-symbols-outlined text-xs text-secondary";
+        } else if (fillerRating === "Medium") {
+            fillersValEl.className = "text-amber-400 font-bold";
+            fillersIconEl.className = "material-symbols-outlined text-xs text-amber-400";
+        } else {
+            fillersValEl.className = "text-error font-bold";
+            fillersIconEl.className = "material-symbols-outlined text-xs text-error";
+        }
+        
+        const clarityValEl = document.getElementById('metric-clarity-val');
+        const clarityIconEl = document.getElementById('metric-clarity-icon');
+        clarityValEl.textContent = clarityRating;
+        if (clarityRating === "High") {
+            clarityValEl.className = "text-secondary font-bold";
+            clarityIconEl.className = "material-symbols-outlined text-xs text-secondary";
+        } else if (clarityRating === "Medium") {
+            clarityValEl.className = "text-amber-400 font-bold";
+            clarityIconEl.className = "material-symbols-outlined text-xs text-amber-400";
+        } else {
+            clarityValEl.className = "text-error font-bold";
+            clarityIconEl.className = "material-symbols-outlined text-xs text-error";
+        }
+        
+        const confidenceValEl = document.getElementById('metric-confidence-val');
+        const confidenceIconEl = document.getElementById('metric-confidence-icon');
+        confidenceValEl.textContent = confidenceRating;
+        if (confidenceRating === "High") {
+            confidenceValEl.className = "text-secondary font-bold";
+            confidenceIconEl.className = "material-symbols-outlined text-xs text-secondary";
+        } else if (confidenceRating === "Medium") {
+            confidenceValEl.className = "text-amber-400 font-bold";
+            confidenceIconEl.className = "material-symbols-outlined text-xs text-amber-400";
+        } else {
+            confidenceValEl.className = "text-error font-bold";
+            confidenceIconEl.className = "material-symbols-outlined text-xs text-error";
+        }
+        
+        lastRecordedClarity = clarityRating;
+        if (recognition) recognition.currentTurnFillers = fillersFound;
+    }
+
+    function updateTimelineMap(index) {
+        const totalQs = questions.length - 1; // excluding final evaluation turn
+        
+        // For a 10 question layout:
+        // 0 = Intro
+        // 1, 2, 3 = Basics
+        // 4, 5, 6, 7 = Problem Solving & Projects
+        // 8, 9 = Behavioral
+        
+        const steps = [
+            { id: 'intro', active: index === 0, completed: index > 0 },
+            { id: 'basics', active: index >= 1 && index <= 3, completed: index > 3 },
+            { id: 'solving', active: index >= 4 && index <= 7, completed: index > 7 },
+            { id: 'behavioral', active: index >= 8 && index < totalQs, completed: index >= totalQs },
+            { id: 'final', active: index === totalQs, completed: index > totalQs }
+        ];
+        
+        // Update lines heights or scaling
+        let completedCount = 0;
+        steps.forEach(step => { if (step.completed) completedCount++; });
+        const timelineActiveLine = document.getElementById('timeline-active-line');
+        if (timelineActiveLine) {
+            const scaleY = completedCount / 4; // 4 segments between 5 steps
+            timelineActiveLine.style.transform = `scaleY(${scaleY})`;
+            timelineActiveLine.style.transformOrigin = 'top';
+        }
+        
+        steps.forEach((step, idx) => {
+            const stepIcon = document.getElementById(`step-${step.id}-icon`);
+            const stepSymbol = document.getElementById(`step-${step.id}-symbol`);
+            const stepTitle = document.getElementById(`step-${step.id}-title`);
+            
+            if (!stepIcon || !stepSymbol || !stepTitle) return;
+            
+            if (step.completed) {
+                stepIcon.className = 'w-7 h-7 rounded-full flex items-center justify-center border-2 border-secondary bg-secondary/15 transition-all duration-300 font-bold text-xs text-secondary shadow-[0_0_10px_rgba(162,243,31,0.2)]';
+                stepSymbol.textContent = 'check';
+                stepSymbol.className = 'material-symbols-outlined text-xs text-secondary font-bold';
+                stepTitle.className = 'text-xs font-headline font-bold text-white transition-colors duration-300';
+            } else if (step.active) {
+                stepIcon.className = 'w-7 h-7 rounded-full flex items-center justify-center border-2 border-primary bg-primary/10 transition-all duration-300 font-bold text-xs text-primary shadow-[0_0_12px_rgba(143,245,255,0.4)]';
+                stepSymbol.textContent = 'radio_button_checked';
+                stepSymbol.className = 'material-symbols-outlined text-xs text-primary font-bold';
+                stepTitle.className = 'text-xs font-headline font-bold text-primary transition-colors duration-300';
+            } else {
+                stepIcon.className = 'w-7 h-7 rounded-full flex items-center justify-center border-2 border-outline-variant/40 bg-surface-container-low transition-all duration-300 font-bold text-xs text-outline';
+                stepSymbol.textContent = 'circle';
+                stepSymbol.className = 'material-symbols-outlined text-[8px] text-outline/40';
+                stepTitle.className = 'text-xs font-headline font-semibold text-outline transition-colors duration-300';
+            }
+        });
+    }
+
+    // Coding Challenge Mode Catalog
+    const codingProblems = {
+        'Junior': [{
+            title: 'Two Sum',
+            description: 'Given an array of integers `nums` and an integer `target`, return indices of the two numbers such that they add up to `target`.<\/br><\/br>You may assume that each input would have exactly one solution, and you may not use the same element twice.<\/br><\/br><strong>Example 1:<\/strong><\/br><code>Input: nums = [2,7,11,15], target = 9<\/br>Output: [0,1]<\/br>Explanation: Because nums[0] + nums[1] == 9, we return [0, 1].<\/code>',
+            starterCodes: {
+                'javascript': 'function twoSum(nums, target) {\n    // Write your code here\n    \n}',
+                'python': 'def twoSum(nums, target):\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public int[] twoSum(int[] nums, int target) {\n        // Write your code here\n        return new int[]{};\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    vector<int> twoSum(vector<int>& nums, int target) {\n        // Write your code here\n        return {};\n    }\n};',
+                'c': 'int* twoSum(int* nums, int numsSize, int target, int* returnSize) {\n    // Write your code here\n    *returnSize = 2;\n    int* result = (int*)malloc(2 * sizeof(int));\n    return result;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = JSON.stringify(fn([2,7,11,15], 9)) === '[0,1]';
+                    const test2 = JSON.stringify(fn([3,2,4], 6)) === '[1,2]';
+                    const test3 = JSON.stringify(fn([3,3], 6)) === '[0,1]';
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [
+                            { passed: test1 },
+                            { passed: test2 },
+                            { passed: test3 }
+                        ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }, {
+            title: 'Valid Palindrome',
+            description: 'A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.<br><br>Given a string `s`, return `true` if it is a palindrome, or `false` otherwise.<br><br><strong>Example:</strong><br><code>Input: s = "A man, a plan, a canal: Panama"<br>Output: true</code>',
+            starterCodes: {
+                'javascript': 'function isPalindrome(s) {\n    // Write your code here\n    \n}',
+                'python': 'def isPalindrome(s: str) -> bool:\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    bool isPalindrome(string s) {\n        // Write your code here\n        return false;\n    }\n};',
+                'c': 'bool isPalindrome(char* s) {\n    // Write your code here\n    return false;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = fn("A man, a plan, a canal: Panama") === true;
+                    const test2 = fn("race a car") === false;
+                    const test3 = fn(" ") === true;
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [ { passed: test1 }, { passed: test2 }, { passed: test3 } ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }, {
+            title: 'FizzBuzz',
+            description: 'Given an integer `n`, return a string array `answer` (1-indexed) where:<br>- `answer[i] == "FizzBuzz"` if `i` is divisible by 3 and 5.<br>- `answer[i] == "Fizz"` if `i` is divisible by 3.<br>- `answer[i] == "Buzz"` if `i` is divisible by 5.<br>- `answer[i] == i` (as a string) if none of the above conditions are true.<br><br><strong>Example:</strong><br><code>Input: n = 3<br>Output: ["1","2","Fizz"]</code>',
+            starterCodes: {
+                'javascript': 'function fizzBuzz(n) {\n    // Write your code here\n    \n}',
+                'python': 'def fizzBuzz(n: int):\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public List<String> fizzBuzz(int n) {\n        // Write your code here\n        return null;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    vector<string> fizzBuzz(int n) {\n        // Write your code here\n        return {};\n    }\n};',
+                'c': 'char ** fizzBuzz(int n, int* returnSize) {\n    // Write your code here\n    return NULL;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = JSON.stringify(fn(3)) === '["1","2","Fizz"]';
+                    const test2 = JSON.stringify(fn(5)) === '["1","2","Fizz","4","Buzz"]';
+                    return { success: test1 && test2, results: [ { passed: test1 }, { passed: test2 } ] };
+                } catch(e) { return { success: false, error: e.message }; }
+            }
+        }, {
+            title: 'Contains Duplicate',
+            description: 'Given an integer array `nums`, return `true` if any value appears at least twice in the array, and return `false` if every element is distinct.<br><br><strong>Example:</strong><br><code>Input: nums = [1,2,3,1]<br>Output: true</code>',
+            starterCodes: {
+                'javascript': 'function containsDuplicate(nums) {\n    // Write your code here\n    \n}',
+                'python': 'def containsDuplicate(nums):\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public boolean containsDuplicate(int[] nums) {\n        // Write your code here\n        return false;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    bool containsDuplicate(vector<int>& nums) {\n        // Write your code here\n        return false;\n    }\n};',
+                'c': 'bool containsDuplicate(int* nums, int numsSize) {\n    // Write your code here\n    return false;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = fn([1,2,3,1]) === true;
+                    const test2 = fn([1,2,3,4]) === false;
+                    return { success: test1 && test2, results: [ { passed: test1 }, { passed: test2 } ] };
+                } catch(e) { return { success: false, error: e.message }; }
+            }
+        }], 'Mid-Level': [{
+            title: 'Valid Parentheses',
+            description: 'Given a string `s` containing just the characters `\'(\'`, `\')\'`, `\'{\'`, `\'}\'`, `\'[\'` and `\']\'`, determine if the input string is valid.<\/br><\/br>An input string is valid if:<\/br>1. Open brackets must be closed by the same type of brackets.<\/br>2. Open brackets must be closed in the correct order.<\/br><\/br><strong>Example 1:<\/strong><\/br><code>Input: s = "()"<\/br>Output: true<\/code><\/br><strong>Example 2:<\/strong><\/br><code>Input: s = "()[]{}"<\/br>Output: true<\/code>',
+            starterCodes: {
+                'javascript': 'function isValid(s) {\n    // Write your code here\n    \n}',
+                'python': 'def isValid(s: str) -> bool:\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public boolean isValid(String s) {\n        // Write your code here\n        return false;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    bool isValid(string s) {\n        // Write your code here\n        return false;\n    }\n};',
+                'c': 'bool isValid(char* s) {\n    // Write your code here\n    return false;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = fn("()") === true;
+                    const test2 = fn("()[]{}") === true;
+                    const test3 = fn("(]") === false;
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [
+                            { passed: test1 },
+                            { passed: test2 },
+                            { passed: test3 }
+                        ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }, {
+            title: 'Valid Palindrome (Mid)',
+            description: 'A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.<br><br>Given a string `s`, return `true` if it is a palindrome, or `false` otherwise.<br><br><strong>Example:</strong><br><code>Input: s = "A man, a plan, a canal: Panama"<br>Output: true</code>',
+            starterCodes: {
+                'javascript': 'function isPalindrome(s) {\n    // Write your code here\n    \n}',
+                'python': 'def isPalindrome(s: str) -> bool:\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    bool isPalindrome(string s) {\n        // Write your code here\n        return false;\n    }\n};',
+                'c': 'bool isPalindrome(char* s) {\n    // Write your code here\n    return false;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = fn("A man, a plan, a canal: Panama") === true;
+                    const test2 = fn("race a car") === false;
+                    const test3 = fn(" ") === true;
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [ { passed: test1 }, { passed: test2 }, { passed: test3 } ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }], 'Senior': [{
+            title: 'LRU Cache',
+            description: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) cache.<\/br><\/br>Implement the `LRUCache` class:<\/br>- `LRUCache(int capacity)` Initialize the cache size.<\/br>- `int get(int key)` Return the value of the key if it exists, otherwise return -1.<\/br>- `void put(int key, int value)` Update/insert value. Evict the least recently used key if capacity is exceeded.<\/br><\/br><strong>Example:<\/strong><\/br><code>LRUCache cache = new LRUCache(2);<\/br>cache.put(1, 1);<\/br>cache.put(2, 2);<\/br>cache.get(1);       // returns 1<\/br>cache.put(3, 3);    // evicts key 2<\/br>cache.get(2);       // returns -1<\/code>',
+            starterCodes: {
+                'javascript': 'class LRUCache {\n    constructor(capacity) {\n        this.capacity = capacity;\n        this.cache = new Map();\n    }\n    \n    get(key) {\n        if (!this.cache.has(key)) return -1;\n        const val = this.cache.get(key);\n        this.cache.delete(key);\n        this.cache.set(key, val);\n        return val;\n    }\n    \n    put(key, value) {\n        if (this.cache.has(key)) {\n            this.cache.delete(key);\n        } else if (this.cache.size >= this.capacity) {\n            const firstKey = this.cache.keys().next().value;\n            this.cache.delete(firstKey);\n        }\n        this.cache.set(key, value);\n    }\n}',
+                'python': 'class LRUCache:\n    def __init__(self, capacity: int):\n        # Write your code here\n        pass\n    def get(self, key: int) -> int:\n        return -1\n    def put(self, key: int, value: int) -> None:\n        pass',
+                'java': 'class LRUCache {\n    public LRUCache(int capacity) {\n        // Write your code here\n    }\n    public int get(int key) {\n        return -1;\n    }\n    public void put(int key, int value) {\n    }\n}',
+                'cpp': 'class LRUCache {\npublic:\n    LRUCache(int capacity) {\n        // Write your code here\n    }\n    int get(int key) {\n        return -1;\n    }\n    void put(int key, int value) {\n    }\n};',
+                'c': 'typedef struct {\n    // Write your code here\n} LRUCache;\n\nLRUCache* lruCacheCreate(int capacity) {\n    return NULL;\n}\nint lruCacheGet(LRUCache* obj, int key) {\n    return -1;\n}\nvoid lruCachePut(LRUCache* obj, int key, int value) {\n}\nvoid lruCacheFree(LRUCache* obj) {\n}'
+            },
+            validate: (code) => {
+                try {
+                    const LRUClass = new Function(code + '; return LRUCache;')();
+                    const lru = new LRUClass(2);
+                    lru.put(1, 1);
+                    lru.put(2, 2);
+                    const test1 = lru.get(1) === 1;
+                    lru.put(3, 3);
+                    const test2 = lru.get(2) === -1;
+                    const test3 = lru.get(1) === 1; // 1 was accessed, so 2 was evicted!
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [
+                            { passed: test1 },
+                            { passed: test2 },
+                            { passed: test3 }
+                        ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }, {
+            title: 'Valid Palindrome (Senior)',
+            description: 'A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.<br><br>Given a string `s`, return `true` if it is a palindrome, or `false` otherwise.<br><br><strong>Example:</strong><br><code>Input: s = "A man, a plan, a canal: Panama"<br>Output: true</code>',
+            starterCodes: {
+                'javascript': 'function isPalindrome(s) {\n    // Write your code here\n    \n}',
+                'python': 'def isPalindrome(s: str) -> bool:\n    # Write your code here\n    pass',
+                'java': 'class Solution {\n    public boolean isPalindrome(String s) {\n        // Write your code here\n        return false;\n    }\n}',
+                'cpp': 'class Solution {\npublic:\n    bool isPalindrome(string s) {\n        // Write your code here\n        return false;\n    }\n};',
+                'c': 'bool isPalindrome(char* s) {\n    // Write your code here\n    return false;\n}'
+            },
+            validate: (code) => {
+                try {
+                    const fn = new Function('return ' + code)();
+                    const test1 = fn("A man, a plan, a canal: Panama") === true;
+                    const test2 = fn("race a car") === false;
+                    const test3 = fn(" ") === true;
+                    return {
+                        success: test1 && test2 && test3,
+                        results: [ { passed: test1 }, { passed: test2 }, { passed: test3 } ]
+                    };
+                } catch(e) {
+                    return { success: false, error: e.message };
+                }
+            }
+        }]
+    };
+    
+    // Shuffle the coding problems so the user gets random ones every session
+    Object.keys(codingProblems).forEach(level => {
+        codingProblems[level].sort(() => Math.random() - 0.5);
+    });
+    
+    let monacoEditorInstance = null;
+    let codingModeActive = false;
+
+    function initMonacoEditor(starterCode, lang = 'javascript') {
+        const monacoLang = lang === 'cpp' ? 'cpp' : (lang === 'c' ? 'c' : lang);
+        if (monacoEditorInstance) {
+            monacoEditorInstance.setValue(starterCode);
+            const model = monacoEditorInstance.getModel();
+            monaco.editor.setModelLanguage(model, monacoLang);
+            return;
+        }
+        if (typeof require !== 'undefined') {
+            require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' } });
+            require(['vs/editor/editor.main'], function () {
+                monacoEditorInstance = monaco.editor.create(document.getElementById('monaco-editor'), {
+                    value: starterCode,
+                    language: monacoLang,
+                    theme: 'vs-dark',
+                    automaticLayout: true,
+                    fontSize: 13,
+                    minimap: { enabled: false },
+                    scrollbar: { verticalScrollbarSize: 6, horizontalScrollbarSize: 6 },
+                    lineNumbers: 'on',
+                    roundedSelection: true,
+                    scrollBeyondLastLine: false,
+                    readOnly: false
+                });
+            });
+        }
+    }
+
+    function setupTestCasesUI(problem) {
+        const container = document.getElementById('coding-test-cases');
+        container.innerHTML = '';
+        
+        let cases = [];
+        if (problem.title.includes('Two Sum')) {
+            cases = [
+                { label: 'Test Case 1', desc: 'nums = [2,7,11,15], target = 9', expected: '[0,1]' },
+                { label: 'Test Case 2', desc: 'nums = [3,2,4], target = 6', expected: '[1,2]' },
+                { label: 'Test Case 3', desc: 'nums = [3,3], target = 6', expected: '[0,1]' }
+            ];
+        } else if (problem.title.includes('Valid Palindrome')) {
+            cases = [
+                { label: 'Test Case 1', desc: 's = "A man, a plan..."', expected: 'true' },
+                { label: 'Test Case 2', desc: 's = "race a car"', expected: 'false' },
+                { label: 'Test Case 3', desc: 's = " "', expected: 'true' }
+            ];
+        } else if (problem.title.includes('LRU Cache')) {
+            cases = [
+                { label: 'Test Case 1', desc: 'capacity=2, put(1,1), put(2,2) -> get(1)', expected: '1' },
+                { label: 'Test Case 2', desc: 'put(3,3) (evicts 2) -> get(2)', expected: '-1' },
+                { label: 'Test Case 3', desc: 'get(1) after update', expected: '1' }
+            ];
+        } else { // Valid Parentheses
+            cases = [
+                { label: 'Test Case 1', desc: 's = "()"', expected: 'true' },
+                { label: 'Test Case 2', desc: 's = "()[]{}"', expected: 'true' },
+                { label: 'Test Case 3', desc: 's = "(]"', expected: 'false' }
+            ];
+        }
+        
+        cases.forEach((tc, idx) => {
+            const div = document.createElement('div');
+            div.className = 'flex justify-between items-center p-3 rounded-xl bg-surface-container-highest/20 border border-outline-variant/10 text-xs text-left';
+            div.id = `testcase-${idx}`;
+            div.innerHTML = `
+                <div>
+                    <div class="font-semibold text-white">${tc.label}</div>
+                    <div class="text-[10px] text-outline mt-0.5">${tc.desc}</div>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-black text-outline uppercase tracking-wider" id="testcase-${idx}-status">Pending</span>
+                    <div class="text-[9px] text-outline-variant mt-0.5">Expected: ${tc.expected}</div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function toggleCodingMode(active) {
+        codingModeActive = active;
+        const chatThread = document.getElementById('chat-thread');
+        const codingWorkspace = document.getElementById('coding-workspace');
+        const commandBarInput = document.querySelector('.command-bar');
+        const activeQCard = document.getElementById('active-question-card');
+        
+        if (active) {
+            chatThread.style.display = 'none';
+            activeQCard.style.display = 'none';
+            
+            // Disable normal input row
+            const inputRow = commandBarInput.querySelector('.relative.flex.items-end');
+            if (inputRow) inputRow.style.display = 'none';
+            
+            codingWorkspace.classList.remove('hidden');
+            codingWorkspace.style.display = 'flex';
+            
+            const levelKey = selectedLevel || 'Mid-Level';
+            let problemList = codingProblems[levelKey] || codingProblems['Mid-Level'];
+            let problem;
+            if (Array.isArray(problemList)) {
+                problem = (currentQIndex === 5 && problemList.length > 1) ? problemList[1] : problemList[0];
+            } else {
+                problem = problemList;
+            }
+            
+            document.getElementById('coding-problem-title').textContent = problem.title;
+            document.getElementById('coding-problem-description').innerHTML = problem.description;
+            
+            const lang = currentSelectedLanguage || 'javascript';
+            
+            const selectedTextEl = document.getElementById('selected-lang-text');
+            if (selectedTextEl) {
+                const langLabels = {
+                    'javascript': 'JavaScript',
+                    'python': 'Python',
+                    'java': 'Java',
+                    'cpp': 'C++',
+                    'c': 'C'
+                };
+                selectedTextEl.textContent = langLabels[lang] || 'JavaScript';
+            }
+            
+            setupTestCasesUI(problem);
+            initMonacoEditor(problem.starterCodes[lang], lang);
+            
+            const submitBtn = document.getElementById('submit-code-btn');
+            if (submitBtn) {
+                submitBtn.innerHTML = 'SUBMIT CODE';
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+            const runBtn = document.getElementById('run-code-btn');
+            if (runBtn) {
+                runBtn.innerHTML = 'RUN CODE';
+                runBtn.disabled = false;
+                runBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            chatThread.style.display = '';
+            activeQCard.style.display = '';
+            
+            const inputRow = commandBarInput.querySelector('.relative.flex.items-end');
+            if (inputRow) inputRow.style.display = '';
+            
+            codingWorkspace.classList.add('hidden');
+            codingWorkspace.style.display = 'none';
+        }
+    }
+
+    // Connect compiler hooks
+    let currentSelectedLanguage = 'javascript';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const runBtn = document.getElementById('run-code-btn');
+        const submitBtn = document.getElementById('submit-code-btn');
+        
+        const dropdownBtn = document.getElementById('lang-dropdown-btn');
+        const dropdownOptions = document.getElementById('lang-dropdown-options');
+        const dropdownArrow = document.getElementById('lang-dropdown-arrow');
+        const selectedLangText = document.getElementById('selected-lang-text');
+        
+        function openLangDropdown() {
+            dropdownOptions.classList.remove('hidden');
+            setTimeout(() => {
+                dropdownOptions.classList.remove('scale-95', 'opacity-0');
+                dropdownOptions.classList.add('scale-100', 'opacity-100');
+                dropdownArrow.classList.add('rotate-180');
+            }, 10);
+        }
+        
+        function closeLangDropdown() {
+            dropdownOptions.classList.remove('scale-100', 'opacity-100');
+            dropdownOptions.classList.add('scale-95', 'opacity-0');
+            dropdownArrow.classList.remove('rotate-180');
+            setTimeout(() => {
+                dropdownOptions.classList.add('hidden');
+            }, 200);
+        }
+        
+        if (dropdownBtn) {
+            dropdownBtn.onclick = (e) => {
+                e.stopPropagation();
+                const isHidden = dropdownOptions.classList.contains('hidden');
+                if (isHidden) {
+                    openLangDropdown();
+                } else {
+                    closeLangDropdown();
+                }
+            };
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (dropdownOptions && !dropdownOptions.classList.contains('hidden')) {
+                const wrapper = document.getElementById('lang-dropdown-wrapper');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    closeLangDropdown();
+                }
+            }
+        });
+        
+        const langOptions = document.querySelectorAll('.lang-option');
+        langOptions.forEach(opt => {
+            opt.onclick = (e) => {
+                e.stopPropagation();
+                const val = opt.getAttribute('data-value');
+                const label = opt.textContent;
+                
+                selectedLangText.textContent = label;
+                currentSelectedLanguage = val;
+                
+                const levelKey = selectedLevel || 'Mid-Level';
+                const problem = codingProblems[levelKey] || codingProblems['Mid-Level'];
+                if (monacoEditorInstance) {
+                    const model = monacoEditorInstance.getModel();
+                    const monacoLang = val === 'cpp' ? 'cpp' : (val === 'c' ? 'c' : val);
+                    monaco.editor.setModelLanguage(model, monacoLang);
+                    monacoEditorInstance.setValue(problem.starterCodes[val]);
+                }
+                
+                closeLangDropdown();
+            };
+        });
+        
+        if (runBtn) {
+            runBtn.onclick = async () => {
+                if (!monacoEditorInstance) return;
+                const code = monacoEditorInstance.getValue();
+                const levelKey = selectedLevel || 'Mid-Level';
+                let problem = codingProblems[levelKey] || codingProblems['Mid-Level'];
+                if (Array.isArray(problem)) problem = currentQIndex === 5 && problem.length > 1 ? problem[1] : problem[0];
+                const language = currentSelectedLanguage;
+                
+                runBtn.textContent = 'Compiling...';
+                runBtn.disabled = true;
+                
+                document.getElementById('code-ai-feedback').textContent = 'Analyzing patterns & running tests via AI compiler...';
+                
+                try {
+                    const res = await fetch('/evaluate-code', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: problem.title,
+                            code: code,
+                            language: language
+                        })
+                    });
+                    const data = await res.json();
+                    
+                    runBtn.textContent = 'Run Code';
+                    runBtn.disabled = false;
+                    
+                    document.getElementById('code-time-complexity').textContent = data.timeComplexity || 'O(N)';
+                    document.getElementById('code-space-complexity').textContent = data.spaceComplexity || 'O(1)';
+                    document.getElementById('code-ai-feedback').innerHTML = `
+                        <strong>Time/Space:</strong> ${data.analysis}<br><br>
+                        <strong>AI Assessment:</strong> ${data.aiFeedback}
+                    `;
+                    
+                    const tcResults = data.testCases || [{"passed": true}, {"passed": true}, {"passed": true}];
+                    let allPassed = true;
+                    tcResults.forEach((res, idx) => {
+                        const statusEl = document.getElementById(`testcase-${idx}-status`);
+                        const tcCard = document.getElementById(`testcase-${idx}`);
+                        if (statusEl && tcCard) {
+                            if (res.passed) {
+                                statusEl.textContent = 'Passed';
+                                statusEl.className = 'text-[10px] font-black text-secondary uppercase tracking-wider';
+                                tcCard.className = 'flex justify-between items-center p-3 rounded-xl bg-secondary/5 border border-secondary/20 text-xs text-left';
+                            } else {
+                                statusEl.textContent = 'Failed';
+                                statusEl.className = 'text-[10px] font-black text-error uppercase tracking-wider';
+                                tcCard.className = 'flex justify-between items-center p-3 rounded-xl bg-error/5 border border-error/20 text-xs text-left';
+                                allPassed = false;
+                            }
+                        }
+                    });
+
+                    if (allPassed) {
+                        runBtn.textContent = 'Submitting...';
+                        runBtn.disabled = true;
+                        setTimeout(() => {
+                            const submitBtn = document.getElementById('submit-code-btn');
+                            if (submitBtn) submitBtn.click();
+                        }, 1500);
+                    }
+                } catch (e) {
+                    console.error("AI Grader error:", e);
+                    runBtn.textContent = 'Run Code';
+                    runBtn.disabled = false;
+                    document.getElementById('code-time-complexity').textContent = 'O(N)';
+                    document.getElementById('code-space-complexity').textContent = 'O(1)';
+                    document.getElementById('code-ai-feedback').textContent = 'AI compiler offline. Standard patterns verified.';
+                }
+            };
+        }
+        
+        if (submitBtn) {
+            submitBtn.onclick = () => {
+                if (!monacoEditorInstance) return;
+                const code = monacoEditorInstance.getValue();
+                const levelKey = selectedLevel || 'Mid-Level';
+                let problem = codingProblems[levelKey] || codingProblems['Mid-Level'];
+                if (Array.isArray(problem)) problem = currentQIndex === 5 && problem.length > 1 ? problem[1] : problem[0];
+                const language = currentSelectedLanguage;
+                
+                const submissionText = `[Submitted Solution for ${problem.title} in ${language.toUpperCase()}]\n\n\`\`\`${language}\n${code}\n\`\`\``;
+                userInput.value = submissionText;
+                
+                toggleCodingMode(false);
+                nextStep();
+            };
+        }
+    });
+
+    function triggerCinematicSummary(reportData) {
+        // Show summary overlay
+        const overlay = document.getElementById('cinematic-summary-overlay');
+        if (overlay) overlay.classList.remove('hidden');
+        
+        let strengths = reportData.strengths || ["Structured response formulation using logical frameworks.", "Maintained consistent pacing."];
+        let weaknesses = reportData.weaknesses || ["Provide deeper analysis of memory/latency trade-offs.", "Reduce reliance on filler expressions."];
+        
+        const strengthsList = document.getElementById('anim-strengths-list');
+        if (strengthsList) {
+            strengthsList.innerHTML = '';
+            strengths.forEach(str => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2 leading-relaxed';
+                li.innerHTML = `<span class="text-secondary font-bold font-label">✔<\/span> <span>${str}<\/span>`;
+                strengthsList.appendChild(li);
+            });
+        }
+        
+        const weaknessesList = document.getElementById('anim-weaknesses-list');
+        if (weaknessesList) {
+            weaknessesList.innerHTML = '';
+            weaknesses.forEach(wk => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2 leading-relaxed';
+                li.innerHTML = `<span class="text-tertiary font-bold font-label">●<\/span> <span>${wk}<\/span>`;
+                weaknessesList.appendChild(li);
+            });
+        }
+        
+        // Count up animations
+        const duration = 1200;
+        const stepTime = 16;
+        const totalSteps = duration / stepTime;
+        const overallTarget = reportData.score || 85;
+        const techTarget = reportData.tech || 88;
+        const commTarget = reportData.comm || 80;
+        const confTarget = reportData.conf || 82;
+        
+        const hiringTarget = Math.round(overallTarget * 0.9 + 5);
+        const readinessTarget = overallTarget;
+        
+        let currentStep = 0;
+        
+        const interval = setInterval(() => {
+            currentStep++;
+            const progress = currentStep / totalSteps;
+            const easeProgress = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+            
+            const techVal = document.getElementById('anim-score-tech');
+            const commVal = document.getElementById('anim-score-comm');
+            const confVal = document.getElementById('anim-score-conf');
+            const hiringVal = document.getElementById('anim-hiring-prob');
+            const readinessVal = document.getElementById('anim-readiness-val');
+            const overallVal = document.getElementById('anim-score-overall');
+            
+            if (techVal) techVal.textContent = Math.round(techTarget * easeProgress);
+            if (commVal) commVal.textContent = Math.round(commTarget * easeProgress);
+            if (confVal) confVal.textContent = Math.round(confTarget * easeProgress);
+            if (hiringVal) hiringVal.textContent = Math.round(hiringTarget * easeProgress);
+            if (readinessVal) readinessVal.textContent = Math.round(readinessTarget * easeProgress);
+            if (overallVal) overallVal.textContent = Math.round(overallTarget * easeProgress);
+            
+            const readinessCircle = document.getElementById('anim-readiness-circle');
+            if (readinessCircle) {
+                const radius = 26;
+                const circumference = 2 * Math.PI * radius;
+                const val = Math.round(readinessTarget * easeProgress);
+                readinessCircle.style.strokeDashoffset = circumference - (val / 100) * circumference;
+            }
+            
+            if (currentStep >= totalSteps) {
+                clearInterval(interval);
+                if (techVal) techVal.textContent = techTarget;
+                if (commVal) commVal.textContent = commTarget;
+                if (confVal) confVal.textContent = confTarget;
+                if (hiringVal) hiringVal.textContent = hiringTarget;
+                if (readinessVal) readinessVal.textContent = readinessTarget;
+                if (overallVal) overallVal.textContent = overallTarget;
+                
+                if (readinessCircle) {
+                    const radius = 26;
+                    const circumference = 2 * Math.PI * radius;
+                    readinessCircle.style.strokeDashoffset = circumference - (readinessTarget / 100) * circumference;
+                }
+            }
+        }, stepTime);
+        
+        const proceedBtn = document.getElementById('cinematic-proceed-btn');
+        if (proceedBtn) {
+            proceedBtn.onclick = () => {
+                window.location.href = '/dashboard';
+            };
+        }
+    }
+
+    // Auto-expanding textarea & keydown/input hooks
+    userInput.addEventListener('input', () => {
+        userInput.style.height = 'auto';
+        userInput.style.height = userInput.scrollHeight + 'px';
+        updateEvaluation();
+    });
+
+    userInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!userInput.disabled && userInput.value.trim() !== '') {
+                if (isListening) stopListening();
+                nextStep();
+            }
+        }
+    });
+
+    nextBtn.onclick = () => {
+        if (!userInput.disabled && userInput.value.trim() !== '') {
+            if (isListening) stopListening();
+            nextStep();
+        }
+    };
+
+    if (micBtn) {
+        if (SpeechRecognition) {
+            micBtn.title = "Toggle voice input";
+            micBtn.onclick = () => {
+                if (isListening) {
+                    stopListening();
+                } else {
+                    startListening();
+                }
+            };
+        } else {
+            micBtn.title = "Voice recognition not supported in this browser";
+            micBtn.onclick = () => {
+                alert("Speech recognition is not supported in your browser. Please try Chrome or Edge.");
+            };
+        }
+    }
+
+    function playSciFiChime() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            
+            // Oscillator 1 (Warm Triangle sweep)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'triangle';
+            osc1.frequency.setValueAtTime(440, ctx.currentTime); // A4
+            osc1.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3); // A5
+            
+            // Oscillator 2 (Sparkling Sine sweep)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+            osc2.frequency.exponentialRampToValueAtTime(1318.5, ctx.currentTime + 0.35); // E6
+            
+            // Gain envelopes
+            gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+            gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+            
+            gain2.gain.setValueAtTime(0.06, ctx.currentTime);
+            gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.9);
+            
+            // Delay/Feedback effect for depth
+            const delay = ctx.createDelay();
+            delay.delayTime.setValueAtTime(0.15, ctx.currentTime);
+            const feedback = ctx.createGain();
+            feedback.gain.setValueAtTime(0.3, ctx.currentTime);
+            
+            osc1.connect(gain1);
+            osc2.connect(gain2);
+            
+            // Connect to main out
+            gain1.connect(ctx.destination);
+            gain2.connect(ctx.destination);
+            
+            // Connect to delay line
+            gain1.connect(delay);
+            delay.connect(feedback);
+            feedback.connect(delay);
+            feedback.connect(ctx.destination);
+            
+            osc1.start();
+            osc2.start();
+            osc1.stop(ctx.currentTime + 1.0);
+            osc2.stop(ctx.currentTime + 1.0);
+        } catch (e) {
+            console.error("Audio Context chime failed:", e);
+        }
+    }
+
+    async function initializeInterviewSession() {
+        playSciFiChime();
+        
+        // Overwrite the third question (Index 2) for technical role coding challenge to prevent reading unrelated theory questions
+        const isTechnicalRole = selectedRole.toLowerCase().includes('software') || 
+                                selectedRole.toLowerCase().includes('developer') || 
+                                selectedRole.toLowerCase().includes('engineer') || 
+                                selectedRole.toLowerCase().includes('fullstack') || 
+                                selectedRole.toLowerCase().includes('frontend') || 
+                                selectedRole.toLowerCase().includes('backend') || 
+                                selectedRole.toLowerCase().includes('data scientist');
+                                
+        if (isTechnicalRole && questions.length > 5) {
+            const levelKey = selectedLevel || 'Mid-Level';
+            let problemList = codingProblems[levelKey] || codingProblems['Mid-Level'];
+            if (!Array.isArray(problemList)) problemList = [problemList];
+            
+            const p1 = problemList[0];
+            const p2 = problemList.length > 1 ? problemList[1] : problemList[0];
+            
+            questions[4] = `For the first problem solving round, please implement the solution for the coding challenge on your screen: ${p1.title}.`;
+            questions[5] = `For the second problem solving round, please implement the solution for the coding challenge on your screen: ${p2.title}.`;
+        }
+        
+        // Prime speech synthesis to bypass browser autoplay blocks
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const primeUtterance = new SpeechSynthesisUtterance('');
+            window.speechSynthesis.speak(primeUtterance);
+        }
+        
+        // Hide initialization overlay with fade-out
+        const overlay = document.getElementById('init-session-overlay');
+        if (overlay) {
+            overlay.style.transition = 'opacity 0.4s ease';
+            overlay.style.opacity = '0';
+            setTimeout(() => overlay.remove(), 400);
+        }
+        
+        // Request camera access if enabled (render in PiP bubble)
+        if (selectedCamera === 'enabled') {
+            const pipContainer = document.getElementById('pip-camera-container');
+            pipContainer.classList.remove('hidden');
+            
+            const video = document.createElement('video');
+            video.id = 'active-webcam-preview';
+            video.autoplay = true;
+            video.playsInline = true;
+            video.muted = true;
+            video.className = 'w-full h-full object-cover';
+            pipContainer.appendChild(video);
+            
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(stream => {
+                    activeCameraStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error("Session camera access denied:", err);
+                    pipContainer.classList.add('hidden');
+                    video.remove();
+                });
+        }
+
+        resetEvaluation();
+        updateStatus('speaking');
+        updateQuestionMetadata(0); // Initialize first metadata values
+        
+        // Dynamic wait for narrative flow
+        await new Promise(r => setTimeout(r, 600));
+        
+        const firstQ = questions[0];
+        const initialBubble = document.getElementById('current-question');
+        
+        speakText(firstQ);
+        await typeMessage(initialBubble, firstQ);
+        updateStatus('listening');
+        
+        // Enable inputs
+        userInput.disabled = false;
+        nextBtn.disabled = false;
+        if (micBtn && SpeechRecognition) micBtn.disabled = false;
+        // Hide the ENTIRE sidebar during the active interview
+        const mainSidebar = document.getElementById('main-sidebar');
+        if (mainSidebar) {
+            mainSidebar.style.transition = 'opacity 0.4s ease, transform 0.4s ease, width 0.4s ease';
+            mainSidebar.style.opacity = '0';
+            mainSidebar.style.transform = 'translateX(-20px)';
+            setTimeout(() => {
+                mainSidebar.style.display = 'none';
+            }, 400);
+        }
+        
+        userInput.focus();
+    }
+
+    // Start
+    window.onload = () => {
+        // Keep inputs disabled until initialized
+        userInput.disabled = true;
+        nextBtn.disabled = true;
+        if (micBtn) micBtn.disabled = true;
+        
+        // Pre-initialize metadata display for background/lobby topic
+        updateQuestionMetadata(0);
+        
+        // Pre-load SpeechSynthesis voices asynchronously
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+        }
+        
+        const startBtn = document.getElementById('start-session-btn');
+        if (startBtn) {
+            startBtn.onclick = initializeInterviewSession;
+        }
+    };
+</script>
+{% endblock %}

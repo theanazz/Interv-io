@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}interv.io | History & Replay{% endblock %}
+{% block header_title %}Interview History ⏳{% endblock %}
+
+{% block content %}
+<section class="p-10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    
+    <!-- Interview History List -->
+    <div class="glass-panel rounded-[2.5rem] overflow-hidden">
+        <div class="px-10 py-8 border-b border-outline-variant/10 bg-surface-container-highest/20 flex justify-between items-center">
+            <div>
+                <h3 class="font-headline text-xl text-white">Interview Replay System</h3>
+                <p class="text-[10px] text-outline uppercase tracking-widest mt-1">Review your past performances and AI-generated logs</p>
+            </div>
+            <button onclick="window.print()" class="px-6 py-3 rounded-2xl bg-surface-container border border-outline-variant/20 text-xs font-black uppercase tracking-widest text-outline hover:text-white transition-all">Export PDF Report</button>
+        </div>
+        
+        <div class="p-4 space-y-4">
+            {% if pulse %}
+                {% for p in pulse %}
+                <div class="flex items-center justify-between p-6 rounded-[2rem] hover:bg-surface-variant/30 transition-all group cursor-pointer border border-transparent hover:border-outline-variant/20">
+                    <div class="flex items-center gap-8">
+                        <div class="w-16 h-16 rounded-2xl bg-surface-container flex flex-col items-center justify-center text-primary font-black shadow-inner border border-outline-variant/10">
+                            <span class="text-xl">{{ p.score }}</span>
+                            <span class="text-[8px] uppercase font-label text-outline">Score</span>
+                        </div>
+                        <div>
+                            <h4 class="font-headline text-lg text-white mb-1">{{ p.type }} Session</h4>
+                            <p class="text-[11px] text-on-surface-variant flex items-center gap-3">
+                                <span>{{ p.date }}</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></span>
+                                <span>{{ p.speech_clarity }} Clarity</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-outline-variant/30"></span>
+                                <span>{{ p.filler_word_count }} Fillers</span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-8">
+                        <div class="h-12 w-48 hidden lg:block opacity-40 group-hover:opacity-100 transition-opacity">
+                            <div class="flex items-end gap-1 h-full">
+                                {% set base_h = p.score or 50 %}
+                                {% for i in range(12) %}
+                                <div class="w-1 bg-primary/40 rounded-full group-hover:bg-primary transition-all" style="height: {{ (base_h + ((loop.index * 13) % 40) - 20) }}%"></div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                             <a href="/report/{{ p.id }}" class="inline-block p-4 rounded-2xl bg-background/50 text-outline hover:text-primary hover:bg-primary/10 transition-all border border-outline-variant/10">
+                                <span class="material-symbols-outlined">analytics</span>
+                            </a>
+                            <a href="/report/{{ p.id }}" class="inline-block p-4 rounded-2xl bg-primary text-background hover:brightness-110 transition-all shadow-[0_4px_20px_rgba(143,245,255,0.2)]">
+                                <span class="material-symbols-outlined">play_arrow</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="p-20 text-center">
+                    <span class="material-symbols-outlined text-6xl text-outline mb-4">history_toggle_off</span>
+                    <p class="text-on-surface-variant font-headline">No sessions recorded yet.</p>
+                    <a href="/interview" class="mt-4 px-8 py-3 bg-primary text-background rounded-full inline-block font-black uppercase text-xs tracking-widest">Start First Interview</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- AI Retention Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="glass-panel p-8 rounded-[2.5rem] flex flex-col items-center text-center">
+            <span class="text-primary text-3xl font-headline mb-2">{{ metrics.retention if metrics else '0%' }}</span>
+            <p class="text-[10px] text-outline uppercase tracking-widest">Average Answer Retention</p>
+        </div>
+        <div class="glass-panel p-8 rounded-[2.5rem] flex flex-col items-center text-center">
+            <span class="text-secondary text-3xl font-headline mb-2">{{ metrics.speak_time if metrics else '0m' }}</span>
+            <p class="text-[10px] text-outline uppercase tracking-widest">Total Speak Time</p>
+        </div>
+        <div class="glass-panel p-8 rounded-[2.5rem] flex flex-col items-center text-center">
+            <span class="text-tertiary text-3xl font-headline mb-2">{{ metrics.reply_delay if metrics else '0s' }}</span>
+            <p class="text-[10px] text-outline uppercase tracking-widest">Average Reply Delay</p>
+        </div>
+    </div>
+
+</section>
+{% endblock %}

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+    <title>{% block title %}interv.io | AI Interview Command Center{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;500;600&family=Space_Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+          tailwind.config = {
+            darkMode: "class",
+            theme: {
+              extend: {
+                colors: {
+                  "surface-variant": "#262627",
+                  "background": "#0e0e0f",
+                  "secondary": "#a2f31f",
+                  "primary": "#8ff5ff",
+                  "tertiary": "#ff6b9b",
+                  "error": "#ff716c",
+                  "outline": "#767576",
+                  "outline-variant": "#484849",
+                  "surface-container": "#1a191b",
+                  "surface-container-low": "#131314",
+                  "surface-container-highest": "#262627",
+                  "on-surface": "#ffffff",
+                  "on-surface-variant": "#adaaab"
+                },
+                fontFamily: {
+                  "headline": ["Plus Jakarta Sans"],
+                  "body": ["Manrope"],
+                  "label": ["Space Grotesk"]
+                },
+                borderRadius: {"DEFAULT": "1rem", "lg": "1.5rem", "xl": "2.5rem", "full": "9999px"},
+              },
+            },
+          }
+    </script>
+    <style>
+        .glass-panel {
+            background: rgba(26, 25, 27, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(143, 245, 255, 0.05);
+        }
+        .jelly-hover {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .jelly-hover:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(143, 245, 255, 0.2); border-radius: 10px; }
+        @keyframes subtle-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        .animate-float { animation: subtle-float 6s infinite ease-in-out; }
+        
+        @media print {
+            body { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+                background-color: #0e0e0f !important;
+                color: #ffffff !important;
+            }
+            aside, header, #search-container, button[onclick="window.print()"], .sidebar {
+                display: none !important;
+            }
+            main {
+                overflow: visible !important;
+                height: auto !important;
+                background-color: #0e0e0f !important;
+            }
+            .glass-panel {
+                border: 1px solid rgba(255,255,255,0.1) !important;
+                background-color: #1a191b !important;
+            }
+            .w-full.max-w-6xl {
+                max-w: none !important;
+                width: 100% !important;
+            }
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body class="bg-background text-on-surface font-body overflow-hidden">
+
+<div class="flex h-screen overflow-hidden">
+    
+    <!-- Sidebar Navigation -->
+    <aside id="main-sidebar" class="w-72 flex-shrink-0 bg-surface-container-low border-r border-outline-variant/10 flex flex-col p-6 z-50 overflow-y-auto custom-scrollbar">
+        <div class="mb-12 px-2">
+            <a href="/">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" class="h-10 w-auto" style="filter: hue-rotate(150deg) brightness(1.2);">
+            </a>
+        </div>
+        
+        <nav class="space-y-2 flex-grow">
+            <a href="{{ url_for('dashboard') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl {% if request.endpoint == 'dashboard' %}bg-primary/10 text-primary border border-primary/20{% else %}text-on-surface-variant hover:bg-surface-variant/50{% endif %} font-headline text-sm group transition-all">
+                <span class="material-symbols-outlined transition-transform group-hover:scale-110">grid_view</span>
+                Dashboard
+            </a>
+            <a href="{{ url_for('interview') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl {% if request.endpoint == 'interview' %}bg-primary/10 text-primary border border-primary/20{% else %}text-on-surface-variant hover:bg-surface-variant/50{% endif %} transition-all font-headline text-sm group">
+                <span class="material-symbols-outlined transition-transform group-hover:scale-110">sensors</span>
+                Start Interview
+            </a>
+            <a href="{{ url_for('analytics') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl {% if request.endpoint == 'analytics' %}bg-primary/10 text-primary border border-primary/20{% else %}text-on-surface-variant hover:bg-surface-variant/50{% endif %} transition-all font-headline text-sm group">
+                <span class="material-symbols-outlined transition-transform group-hover:scale-110">monitoring</span>
+                Analytics
+            </a>
+            <a href="{{ url_for('resume_ai') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl {% if request.endpoint == 'resume_ai' %}bg-primary/10 text-primary border border-primary/20{% else %}text-on-surface-variant hover:bg-surface-variant/50{% endif %} transition-all font-headline text-sm group">
+                <span class="material-symbols-outlined transition-transform group-hover:scale-110">description</span>
+                Resume AI
+            </a>
+            <a href="{{ url_for('history') }}" class="flex items-center gap-4 px-4 py-3.5 rounded-2xl {% if request.endpoint == 'history' %}bg-primary/10 text-primary border border-primary/20{% else %}text-on-surface-variant hover:bg-surface-variant/50{% endif %} transition-all font-headline text-sm group">
+                <span class="material-symbols-outlined transition-transform group-hover:scale-110">history</span>
+                History
+            </a>
+        </nav>
+        
+        <div class="mt-auto space-y-4 transition-all duration-500" id="job-readiness-block">
+            <div class="p-4 rounded-3xl bg-surface-container-highest/30 border border-outline-variant/10">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-black uppercase tracking-widest text-outline">Job Readiness</span>
+                    <span class="text-[10px] font-black text-secondary">{{ user.readiness_percent or 0 }}%</span>
+                </div>
+                <div class="h-1.5 w-full bg-background rounded-full overflow-hidden mb-4">
+                    <div class="h-full bg-secondary shadow-[0_0_10px_rgba(162,243,31,0.5)]" style="width: {{ user.readiness_percent or 0 }}%"></div>
+                </div>
+
+                <!-- Progress Journey Breakdown -->
+                <div class="space-y-3 pt-3 border-t border-outline-variant/10">
+                    <span class="text-[9px] font-black uppercase tracking-widest text-outline block mb-1">Progress Journey</span>
+                    
+                    <!-- Technical Skills -->
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-on-surface-variant font-medium">Technical Skills</span>
+                            <span class="text-primary font-bold">{{ stats.tech if stats else 0 }}%</span>
+                        </div>
+                        <div class="h-1 w-full bg-background rounded-full overflow-hidden">
+                            <div class="h-full bg-primary shadow-[0_0_8px_rgba(143,245,255,0.4)]" style="width: {{ stats.tech if stats else 0 }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Communication -->
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-on-surface-variant font-medium">Communication</span>
+                            <span class="text-tertiary font-bold">{{ stats.comm if stats else 0 }}%</span>
+                        </div>
+                        <div class="h-1 w-full bg-background rounded-full overflow-hidden">
+                            <div class="h-full bg-tertiary shadow-[0_0_8px_rgba(255,107,155,0.4)]" style="width: {{ stats.comm if stats else 0 }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Problem Solving -->
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-on-surface-variant font-medium">Problem Solving</span>
+                            <span class="text-secondary font-bold">{{ stats.tech if stats else 0 }}%</span>
+                        </div>
+                        <div class="h-1 w-full bg-background rounded-full overflow-hidden">
+                            <div class="h-full bg-secondary shadow-[0_0_8px_rgba(162,243,31,0.4)]" style="width: {{ stats.tech if stats else 0 }}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Confidence Score -->
+                    <div>
+                        <div class="flex justify-between text-[10px] mb-1">
+                            <span class="text-on-surface-variant font-medium">Confidence Score</span>
+                            <span class="text-[#c084fc] font-bold">{{ stats.conf if stats else 0 }}%</span>
+                        </div>
+                        <div class="h-1 w-full bg-background rounded-full overflow-hidden">
+                            <div class="h-full bg-[#c084fc] shadow-[0_0_8px_rgba(192,132,252,0.4)]" style="width: {{ stats.conf if stats else 0 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="text-[10px] text-on-surface-variant mt-3">Finish 2 more technical rounds to reach 90%.</p>
+            </div>
+            
+
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col overflow-y-auto custom-scrollbar bg-background">
+        
+        <!-- Top Bar -->
+        <header class="sticky top-0 z-40 bg-background/80 backdrop-blur-xl px-10 py-6 border-b border-outline-variant/10 flex justify-between items-center gap-8 relative">
+            <!-- Left: Title -->
+            <div class="flex items-center gap-4 flex-shrink-0">
+                <h1 class="font-headline text-2xl text-white tracking-tight">{% block header_title %}Welcome Back, {{ user_name }} 👋{% endblock %}</h1>
+            </div>
+            
+            <!-- Center: Search Command Center -->
+            <div class="hidden md:flex absolute left-1/2 top-1/2 w-96 z-50" style="transform: translate(-50%, -50%);" id="search-container">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 text-outline text-xl pointer-events-none group-focus-within:text-primary transition-colors duration-300" style="transform: translateY(-50%);" id="search-icon-bolt">bolt</span>
+                <input type="text" id="search-input" placeholder="Search command center..." autocomplete="off" class="w-full bg-surface-container-low/60 border border-outline-variant/20 rounded-full pl-12 pr-20 py-2.5 text-sm text-white placeholder-outline/60 focus:ring-2 focus:ring-primary/20 focus:border-primary/50 focus:bg-surface-container-low outline-none transition-all duration-300 font-label shadow-inner hover:bg-surface-container-low/80 hover:border-outline-variant/40">
+                <div class="absolute right-4 top-1/2 flex items-center gap-1 pointer-events-none" style="transform: translateY(-50%);">
+                    <kbd class="text-[10px] bg-surface-container-highest/80 text-outline px-1.5 py-0.5 rounded border border-outline-variant/30 font-sans tracking-wide">Ctrl</kbd>
+                    <kbd class="text-[10px] bg-surface-container-highest/80 text-outline px-1.5 py-0.5 rounded border border-outline-variant/30 font-sans tracking-wide">K</kbd>
+                </div>
+                
+                <!-- Search Results Dropdown -->
+                <div id="search-dropdown" class="invisible opacity-0 absolute top-full mt-3 left-1/2 -translate-x-1/2 w-[420px] bg-surface-container-low/95 border border-outline-variant/30 rounded-2xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.7)] backdrop-blur-2xl p-3 z-50 transition-all duration-200 transform scale-95 origin-top">
+                    
+                    <!-- Search Help Hint -->
+                    <div id="search-initial-state" class="p-3 text-center">
+                        <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto mb-3">
+                            <span class="material-symbols-outlined text-2xl">insights</span>
+                        </div>
+                        <h4 class="text-sm font-semibold text-white mb-1">Search Command Center</h4>
+                        <p class="text-xs text-on-surface-variant max-w-xs mx-auto mb-3">Find pages, practice roles, or trigger automated AI prep actions instantly.</p>
+                        <div class="flex flex-wrap justify-center gap-1.5">
+                            <span class="text-[10px] bg-surface-container-highest border border-outline-variant/20 px-2 py-1 rounded-md text-on-surface-variant hover:text-white cursor-pointer transition-colors duration-150">Dashboard</span>
+                            <span class="text-[10px] bg-surface-container-highest border border-outline-variant/20 px-2 py-1 rounded-md text-on-surface-variant hover:text-white cursor-pointer transition-colors duration-150">Senior SWE</span>
+                            <span class="text-[10px] bg-surface-container-highest border border-outline-variant/20 px-2 py-1 rounded-md text-on-surface-variant hover:text-white cursor-pointer transition-colors duration-150">AI Assist</span>
+                        </div>
+                    </div>
+
+                    <!-- Results List -->
+                    <div id="search-results-list" class="hidden max-h-[350px] overflow-y-auto custom-scrollbar space-y-3">
+                        <!-- Populated by JavaScript -->
+                    </div>
+
+                    <!-- No Results -->
+                    <div id="search-empty-state" class="hidden p-6 text-center text-on-surface-variant">
+                        <span class="material-symbols-outlined text-4xl text-outline mb-2">search_off</span>
+                        <p class="text-sm">No results found for <span id="search-query-text" class="text-white font-semibold">""</span></p>
+                        <p class="text-xs text-outline mt-1">Try searching for pages, candidate profiles, or standard roles like "SWE".</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right: Profile & Notifications -->
+            <div class="flex items-center gap-6 relative">
+                <div class="flex items-center gap-4">
+                    <!-- Notifications -->
+                    <div class="relative">
+                        <button onclick="document.getElementById('notif-dropdown').classList.toggle('hidden'); document.getElementById('profile-dropdown').classList.add('hidden'); document.getElementById('notif-badge').classList.add('hidden');" class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary cursor-pointer hover:bg-primary/30 transition-all focus:outline-none relative">
+                            <span class="material-symbols-outlined pointer-events-none">notifications</span>
+                            <span id="notif-badge" class="absolute top-0 right-0 w-2.5 h-2.5 bg-error rounded-full border-2 border-background pointer-events-none"></span>
+                        </button>
+                        
+                        <div id="notif-dropdown" class="hidden absolute right-0 mt-3 w-80 bg-surface-container-low/95 border border-outline-variant/30 rounded-2xl shadow-2xl backdrop-blur-2xl p-4 z-50">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="text-sm font-headline text-white">Notifications</h4>
+                                <button onclick="clearAllNotifications()" type="button" class="text-[10px] text-primary hover:underline uppercase tracking-widest font-black">Clear All</button>
+                            </div>
+                            <div id="notif-list" class="space-y-3">
+                                <div class="flex gap-3 items-start border-b border-outline-variant/10 pb-3 relative group transition-all">
+                                    <div class="w-8 h-8 rounded-full bg-secondary/20 flex items-center justify-center text-secondary shrink-0">
+                                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                                    </div>
+                                    <div class="flex-grow pr-4">
+                                        <p class="text-xs text-white font-medium">Resume parsed successfully</p>
+                                        <p class="text-[10px] text-on-surface-variant mt-0.5">Your profile has been calibrated.</p>
+                                    </div>
+                                    <button onclick="dismissNotification(this)" type="button" class="opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-outline hover:text-error transition-all">
+                                        <span class="material-symbols-outlined text-[16px]">close</span>
+                                    </button>
+                                </div>
+                                <div class="flex gap-3 items-start relative group transition-all">
+                                    <div class="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                                        <span class="material-symbols-outlined text-sm">bolt</span>
+                                    </div>
+                                    <div class="flex-grow pr-4">
+                                        <p class="text-xs text-white font-medium">Ready for mock interview</p>
+                                        <p class="text-[10px] text-on-surface-variant mt-0.5">Complete 2 more rounds to reach 90% readiness.</p>
+                                    </div>
+                                    <button onclick="dismissNotification(this)" type="button" class="opacity-0 group-hover:opacity-100 absolute right-0 top-0 text-outline hover:text-error transition-all">
+                                        <span class="material-symbols-outlined text-[16px]">close</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Profile -->
+                    <div class="relative">
+                        <button onclick="document.getElementById('profile-dropdown').classList.toggle('hidden'); document.getElementById('notif-dropdown').classList.add('hidden');" class="h-10 w-10 rounded-2xl bg-surface-variant p-0.5 border border-outline-variant/10 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all cursor-pointer">
+                            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ user_name }}" class="w-full h-full rounded-2xl object-cover pointer-events-none">
+                        </button>
+                        
+                        <div id="profile-dropdown" class="hidden absolute right-0 mt-3 w-56 bg-surface-container-low/95 border border-outline-variant/30 rounded-2xl shadow-2xl backdrop-blur-2xl p-2 z-50 flex flex-col">
+                            <div class="px-3 py-2 border-b border-outline-variant/10 mb-1">
+                                <p class="text-sm text-white font-headline">{{ user_name }}</p>
+                                <p class="text-[10px] text-outline truncate">{{ user.email if user.email else 'user@interv.io' }}</p>
+                            </div>
+                            <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-on-surface-variant hover:text-white hover:bg-surface-variant/50 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">person</span>
+                                Profile
+                            </a>
+                            <a href="/settings" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-on-surface-variant hover:text-white hover:bg-surface-variant/50 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">settings</span>
+                                Settings
+                            </a>
+                            <div class="h-px w-full bg-outline-variant/10 my-1"></div>
+                            <a href="/logout" class="flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-error hover:bg-error/10 transition-colors">
+                                <span class="material-symbols-outlined text-[18px]">logout</span>
+                                Logout
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        {% block content %}{% endblock %}
+        
+        {% if request.endpoint != 'interview' %}
+        <footer class="py-12 text-center opacity-60 mt-auto border-t border-outline-variant/5 flex-shrink-0">
+            <p class="font-label text-xs uppercase tracking-[0.25em] text-on-surface-variant">interv.io © 2026 • Premium AI Intelligence • Kinetic SaaS Experience</p>
+        </footer>
+        {% endif %}
+    </main>
+</div>
+
+{% block scripts %}{% endblock %}
+
+<script>
+    function clearAllNotifications() {
+        const list = document.getElementById('notif-list');
+        if (list) {
+            list.innerHTML = "<p class='text-xs text-outline text-center py-4'>No new notifications</p>";
+        }
+        const badge = document.getElementById('notif-badge');
+        if (badge) {
+            badge.classList.add('hidden');
+        }
+    }
+
+    function dismissNotification(btn) {
+        btn.parentElement.remove();
+        const list = document.getElementById('notif-list');
+        if (list && list.children.length === 0) {
+            list.innerHTML = "<p class='text-xs text-outline text-center py-4'>No new notifications</p>";
+        }
+    }
+
+    document.addEventListener('click', (e) => {
+    const notifBtn = e.target.closest('button[onclick*="notif-dropdown"]');
+    const notifDropdown = document.getElementById('notif-dropdown');
+    if (!notifBtn && notifDropdown && !notifDropdown.contains(e.target)) {
+        notifDropdown.classList.add('hidden');
+    }
+    
+    const profileBtn = e.target.closest('button[onclick*="profile-dropdown"]');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    if (!profileBtn && profileDropdown && !profileDropdown.contains(e.target)) {
+        profileDropdown.classList.add('hidden');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const searchItems = [
+        // Navigation pages
+        { type: 'navigation', label: 'Go to Dashboard', detail: 'View analytics, stats, and pulse', url: '/dashboard', icon: 'grid_view' },
+        { type: 'navigation', label: 'Start Interview Practice', detail: 'Calibrate your technical & behavioral skills', url: '/interview', icon: 'sensors' },
+        { type: 'navigation', label: 'Analytics Hub', detail: 'Deep dive into historical performance charts', url: '/analytics', icon: 'monitoring' },
+        { type: 'navigation', label: 'Resume AI Analyzer', detail: 'Upload and calibrate based on resume text', url: '/resume-ai', icon: 'description' },
+        { type: 'navigation', label: 'Interview History & Reports', detail: 'Detailed feedback reports and recordings', url: '/history', icon: 'history' },
+        
+        // Quick Actions
+        { type: 'action', label: 'AI Mock Round: Senior Software Engineer', detail: 'Start SWE Interview immediately', url: '/interview?role=Software+Engineer&level=Senior', icon: 'bolt' },
+        { type: 'action', label: 'AI Mock Round: Product Manager', detail: 'Start PM Interview immediately', url: '/interview?role=Product+Manager&level=Senior', icon: 'bolt' },
+        { type: 'action', label: 'AI Mock Round: Junior Frontend Developer', detail: 'Start Frontend Interview', url: '/interview?role=Frontend+Developer&level=Junior', icon: 'bolt' },
+        { type: 'action', label: 'Sign Out Session', detail: 'Safely clear credentials and log out', url: '/logout', icon: 'logout' },
+        
+        // Candidates
+        { type: 'candidate', label: 'Alex Chen', detail: 'Senior SWE - Score: 92% (System Design specialist)', url: '/report/1', icon: 'person' },
+        { type: 'candidate', label: 'Elena Rodriguez', detail: 'Product Lead - Score: 88% (Agile/EQ champion)', url: '/report/2', icon: 'person' },
+        { type: 'candidate', label: 'Jordan Smith', detail: 'DevOps Eng - Score: 85% (K8s/AWS expert)', url: '/report/3', icon: 'person' }
+    ];
+
+    const searchInput = document.getElementById('search-input');
+    const searchDropdown = document.getElementById('search-dropdown');
+    const searchInitialState = document.getElementById('search-initial-state');
+    const searchResultsList = document.getElementById('search-results-list');
+    const searchEmptyState = document.getElementById('search-empty-state');
+    const searchQueryText = document.getElementById('search-query-text');
+
+    let selectedIndex = -1;
+    let visibleItems = [];
+
+    // Helper to filter and group items
+    function handleSearch(query) {
+        query = query.trim().toLowerCase();
+        
+        if (query === '') {
+            searchInitialState.classList.remove('hidden');
+            searchResultsList.classList.add('hidden');
+            searchEmptyState.classList.add('hidden');
+            selectedIndex = -1;
+            return;
+        }
+        
+        // Filter
+        const filtered = searchItems.filter(item => 
+            item.label.toLowerCase().includes(query) || 
+            item.detail.toLowerCase().includes(query) ||
+            item.type.toLowerCase().includes(query)
+        );
+        
+        visibleItems = filtered;
+        
+        if (filtered.length === 0) {
+            searchInitialState.classList.add('hidden');
+            searchResultsList.classList.add('hidden');
+            searchEmptyState.classList.remove('hidden');
+            searchQueryText.textContent = `"${query}"`;
+            selectedIndex = -1;
+            return;
+        }
+        
+        searchInitialState.classList.add('hidden');
+        searchEmptyState.classList.add('hidden');
+        searchResultsList.classList.remove('hidden');
+        
+        // Group items by type
+        const groups = {};
+        filtered.forEach(item => {
+            if (!groups[item.type]) {
+                groups[item.type] = [];
+            }
+            groups[item.type].push(item);
+        });
+        
+        // Render list
+        searchResultsList.innerHTML = '';
+        
+        // Mapping group key to display title
+        const groupTitles = {
+            navigation: 'Navigation Pages',
+            action: 'Quick Practice Sessions',
+            candidate: 'Candidate Reports & Stats'
+        };
+        
+        let globalIndex = 0;
+        
+        Object.keys(groups).forEach(type => {
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'mb-4 last:mb-0';
+            
+            const header = document.createElement('div');
+            header.className = 'text-[10px] text-outline/85 px-3 py-1 font-bold uppercase tracking-wider mb-1.5 border-b border-outline-variant/10';
+            header.textContent = groupTitles[type] || type;
+            groupDiv.appendChild(header);
+            
+            const itemsDiv = document.createElement('div');
+            itemsDiv.className = 'space-y-1';
+            
+            groups[type].forEach(item => {
+                const currentIdx = globalIndex;
+                item.globalIndex = currentIdx;
+                
+                const link = document.createElement('a');
+                link.href = item.url;
+                link.className = `search-result-item flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-sm group ${
+                    currentIdx === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-surface-container-highest/60 hover:text-white'
+                }`;
+                link.id = `search-item-${currentIdx}`;
+                
+                // Icon
+                const iconSpan = document.createElement('span');
+                iconSpan.className = `material-symbols-outlined text-lg ${
+                    currentIdx === selectedIndex ? 'text-primary' : 'text-outline group-hover:text-white'
+                }`;
+                iconSpan.textContent = item.icon;
+                
+                // Content
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'flex-grow text-left';
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = `font-semibold ${currentIdx === selectedIndex ? 'text-primary' : 'text-white'}`;
+                labelDiv.textContent = item.label;
+                
+                const detailDiv = document.createElement('div');
+                detailDiv.className = `text-[11px] ${currentIdx === selectedIndex ? 'text-primary/70' : 'text-on-surface-variant'}`;
+                detailDiv.textContent = item.detail;
+                
+                contentDiv.appendChild(labelDiv);
+                contentDiv.appendChild(detailDiv);
+                
+                // Chevron/Arrow indicator
+                const actionSpan = document.createElement('span');
+                actionSpan.className = `material-symbols-outlined text-base transition-all ${
+                    currentIdx === selectedIndex ? 'text-primary translate-x-0.5 opacity-100' : 'text-outline opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5'
+                }`;
+                actionSpan.textContent = 'chevron_right';
+                
+                link.appendChild(iconSpan);
+                link.appendChild(contentDiv);
+                link.appendChild(actionSpan);
+                
+                // Mouse hover over item syncs selectedIndex
+                link.addEventListener('mouseenter', () => {
+                    updateSelectedIndex(currentIdx);
+                });
+                
+                itemsDiv.appendChild(link);
+                globalIndex++;
+            });
+            
+            groupDiv.appendChild(itemsDiv);
+            searchResultsList.appendChild(groupDiv);
+        });
+    }
+
+    function updateSelectedIndex(index) {
+        const oldActive = document.querySelector('.search-result-item.bg-primary\\/10');
+        if (oldActive) {
+            oldActive.classList.remove('bg-primary/10', 'text-primary');
+            oldActive.classList.add('hover:bg-surface-container-highest/60', 'hover:text-white');
+            const oldIcon = oldActive.querySelector('.material-symbols-outlined:first-child');
+            if (oldIcon) oldIcon.className = 'material-symbols-outlined text-lg text-outline group-hover:text-white';
+            const oldLabel = oldActive.querySelector('.font-semibold');
+            if (oldLabel) oldLabel.classList.remove('text-primary');
+            const oldDetail = oldActive.querySelector('.text-\\[11px\\]');
+            if (oldDetail) oldDetail.classList.remove('text-primary/70');
+            const oldChevron = oldActive.querySelector('.material-symbols-outlined:last-child');
+            if (oldChevron) oldChevron.className = 'material-symbols-outlined text-base text-outline opacity-0 group-hover:opacity-100';
+        }
+        
+        selectedIndex = index;
+        if (selectedIndex >= 0 && selectedIndex < visibleItems.length) {
+            const newActive = document.getElementById(`search-item-${selectedIndex}`);
+            if (newActive) {
+                newActive.classList.remove('hover:bg-surface-container-highest/60', 'hover:text-white');
+                newActive.classList.add('bg-primary/10', 'text-primary');
+                const newIcon = newActive.querySelector('.material-symbols-outlined:first-child');
+                if (newIcon) newIcon.className = 'material-symbols-outlined text-lg text-primary';
+                const newLabel = newActive.querySelector('.font-semibold');
+                if (newLabel) newLabel.classList.add('text-primary');
+                const newDetail = newActive.querySelector('.text-\\[11px\\]');
+                if (newDetail) newDetail.classList.add('text-primary/70');
+                const newChevron = newActive.querySelector('.material-symbols-outlined:last-child');
+                if (newChevron) newChevron.className = 'material-symbols-outlined text-base text-primary translate-x-0.5 opacity-100';
+                
+                // Scroll to view if offscreen
+                newActive.scrollIntoView({ block: 'nearest' });
+            }
+        }
+    }
+
+    function openDropdown() {
+        searchDropdown.classList.remove('invisible', 'opacity-0', 'scale-95');
+        searchDropdown.classList.add('visible', 'opacity-100', 'scale-100');
+        handleSearch(searchInput.value);
+    }
+
+    function closeDropdown() {
+        searchDropdown.classList.remove('visible', 'opacity-100', 'scale-100');
+        searchDropdown.classList.add('invisible', 'opacity-0', 'scale-95');
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', (e) => {
+        handleSearch(e.target.value);
+    });
+
+    searchInput.addEventListener('focus', openDropdown);
+
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (visibleItems.length > 0) {
+                let nextIndex = selectedIndex + 1;
+                if (nextIndex >= visibleItems.length) nextIndex = 0;
+                updateSelectedIndex(nextIndex);
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (visibleItems.length > 0) {
+                let prevIndex = selectedIndex - 1;
+                if (prevIndex < 0) prevIndex = visibleItems.length - 1;
+                updateSelectedIndex(prevIndex);
+            }
+        } else if (e.key === 'Enter') {
+            if (selectedIndex >= 0 && selectedIndex < visibleItems.length) {
+                e.preventDefault();
+                const selected = visibleItems[selectedIndex];
+                window.location.href = selected.url;
+            } else if (visibleItems.length > 0) {
+                e.preventDefault();
+                window.location.href = visibleItems[0].url;
+            }
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            searchInput.blur();
+            closeDropdown();
+        }
+    });
+
+    // Close on clicking outside
+    document.addEventListener('click', (e) => {
+        const searchContainer = document.getElementById('search-container');
+        if (searchContainer && !searchContainer.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+
+    // Global keyboard shortcut (Ctrl+K or Cmd+K)
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+            e.preventDefault();
+            searchInput.focus();
+        }
+    });
+
+    // Quick suggestion clicks trigger search
+    const pillSuggestions = searchDropdown.querySelectorAll('.flex-wrap span');
+    pillSuggestions.forEach(pill => {
+        pill.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const value = e.target.textContent.trim();
+            searchInput.value = value === 'Senior SWE' ? 'Senior' : (value === 'AI Assist' ? 'AI' : value);
+            searchInput.dispatchEvent(new Event('input'));
+            searchInput.focus();
+        });
+    });
+});
+</script>
+</body>
+</html>

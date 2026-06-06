@@ -1,0 +1,6 @@
+flask
+google-generativeai
+bcrypt
+python-dotenv
+PyPDF2
+python-docx

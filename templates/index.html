@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Neon Jelly - interv.io</title>
+  <link href="https://fonts.googleapis.com" rel="preconnect" />
+  <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&amp;family=Manrope:wght@400;500;600&amp;family=Space_Grotesk:wght@500;700&amp;display=swap"
+    rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "surface-variant": "#262627",
+            "tertiary-fixed-dim": "#ff75a0",
+            "on-secondary-fixed": "#294300",
+            "on-secondary": "#365700",
+            "surface-tint": "#8ff5ff",
+            "primary-container": "#00eefc",
+            "on-tertiary-fixed-variant": "#760037",
+            "background": "#0e0e0f",
+            "error-dim": "#d7383b",
+            "tertiary-fixed": "#ff8eae",
+            "secondary-container": "#426900",
+            "primary-dim": "#00deec",
+            "outline": "#767576",
+            "on-error-container": "#ffa8a3",
+            "secondary": "#a2f31f",
+            "on-tertiary-fixed": "#380017",
+            "primary-fixed-dim": "#00deec",
+            "on-error": "#490006",
+            "on-secondary-fixed-variant": "#3d6200",
+            "outline-variant": "#484849",
+            "inverse-primary": "#006a71",
+            "secondary-fixed": "#a2f31f",
+            "tertiary": "#ff6b9b",
+            "tertiary-dim": "#e30071",
+            "surface-container-lowest": "#000000",
+            "secondary-fixed-dim": "#95e400",
+            "secondary-dim": "#95e400",
+            "surface": "#0e0e0f",
+            "inverse-on-surface": "#565556",
+            "error": "#ff716c",
+            "surface-container-highest": "#262627",
+            "on-surface-variant": "#adaaab",
+            "surface-dim": "#0e0e0f",
+            "on-background": "#ffffff",
+            "tertiary-container": "#ff067f",
+            "on-primary-container": "#005359",
+            "surface-container": "#1a191b",
+            "on-surface": "#ffffff",
+            "error-container": "#9f0519",
+            "surface-container-high": "#201f21",
+            "surface-bright": "#2c2c2d",
+            "inverse-surface": "#fcf8f9",
+            "on-tertiary-container": "#000000",
+            "on-primary": "#005d63",
+            "on-tertiary": "#47001f",
+            "surface-container-low": "#131314",
+            "on-primary-fixed-variant": "#005e64",
+            "on-secondary-container": "#ebffcb",
+            "on-primary-fixed": "#003f43",
+            "primary": "#8ff5ff",
+            "primary-fixed": "#00eefc"
+          },
+          fontFamily: {
+            "headline": ["Plus Jakarta Sans"],
+            "body": ["Manrope"],
+            "label": ["Space Grotesk"]
+          },
+          borderRadius: { "DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px" },
+        },
+      },
+    }
+  </script>
+  <style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+
+    .glass-panel {
+      background: rgba(38, 38, 39, 0.6);
+      backdrop-filter: blur(40px);
+      border-top: 1px solid rgba(143, 245, 255, 0.15);
+      transform-style: preserve-3d;
+    }
+
+    .jelly-glow {
+      box-shadow: inset 0 0 20px rgba(0, 238, 252, 0.4), 0 10px 40px rgba(0, 238, 252, 0.2);
+    }
+
+    .orb-float {
+      filter: blur(60px);
+      opacity: 0.4;
+    }
+
+    .orb-3d {
+      background: radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.3) 0%, rgba(162, 243, 31, 0.2) 40%, rgba(30, 48, 0, 0.8) 100%);
+      box-shadow: inset 8px 8px 20px rgba(255, 255, 255, 0.4), inset -8px -8px 20px rgba(0, 0, 0, 0.7), 0 0 80px rgba(162, 243, 31, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transform-style: preserve-3d;
+      transform: translateZ(50px);
+    }
+
+    .orb-3d:hover {
+      box-shadow: inset 10px 10px 25px rgba(255, 255, 255, 0.5), inset -10px -10px 25px rgba(0, 0, 0, 0.8), 0 0 120px rgba(162, 243, 31, 0.7);
+    }
+
+    .tilt-element {
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .tilt-element:hover {
+      border-color: rgba(143, 245, 255, 0.3) !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(143, 245, 255, 0.1);
+    }
+
+    .hover-glow {
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    }
+
+    .hover-glow:hover {
+      border-color: rgba(143, 245, 255, 0.3) !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 20px rgba(143, 245, 255, 0.1);
+      transform: translateY(-4px);
+    }
+  </style>
+</head>
+
+<body class="bg-background text-on-surface font-body overflow-x-hidden selection:bg-primary selection:text-on-primary">
+  <!-- Top Navigation Shell -->
+  <header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4">
+    <nav
+      class="rounded-full mt-4 mx-auto max-w-7xl w-[95%] border border-cyan-400/15 bg-surface-variant/60 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex justify-between items-center px-8 py-4">
+      <a href="/" class="flex items-center gap-2 group transition-all duration-500">
+        <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" 
+          class="h-10 w-auto transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(0,238,252,0.4)]" 
+          style="filter: hue-rotate(150deg) brightness(1.1);">
+      </a>
+      <div class="hidden md:flex items-center gap-8">
+        <a class="text-slate-400 font-medium hover:text-cyan-200 transition-all duration-300 ease-[0.34,1.56,0.64,1] hover:scale-105"
+          href="#platform">Platform</a>
+        <a class="text-slate-400 font-medium hover:text-cyan-200 transition-all duration-300 ease-[0.34,1.56,0.64,1] hover:scale-105"
+          href="#features">Features</a>
+        <a class="text-slate-400 font-medium hover:text-cyan-200 transition-all duration-300 ease-[0.34,1.56,0.64,1] hover:scale-105"
+          href="#reviews">Reviews</a>
+        <a class="text-slate-400 font-medium hover:text-cyan-200 transition-all duration-300 ease-[0.34,1.56,0.64,1] hover:scale-105"
+          href="#pricing">Pricing</a>
+      </div>
+      <div class="flex items-center gap-4">
+        <button class="text-on-surface-variant font-bold hover:text-primary transition-colors"
+          onclick="window.location.href='/login'">Login</button>
+        <button
+          class="bg-primary-fixed text-on-primary-fixed font-headline px-6 py-2.5 rounded-full font-bold jelly-glow hover:scale-105 active:scale-95 transition-all duration-300 ease-[0.34,1.56,0.64,1]"
+          onclick="window.location.href='/signup'">Get Started</button>
+      </div>
+    </nav>
+  </header>
+  <main class="relative pt-32">
+    <!-- Background Orbs -->
+    <div
+      class="absolute top-[-5%] left-[-5%] w-[400px] h-[400px] bg-primary/50 rounded-full orb-float pointer-events-none blur-[100px]">
+    </div>
+    <div
+      class="absolute top-[15%] right-[-5%] w-[400px] h-[400px] bg-tertiary/25 rounded-full orb-float pointer-events-none blur-[100px]">
+    </div>
+    <!-- Hero Section -->
+    <section id="platform" class="max-w-7xl mx-auto px-8 py-20 text-center relative z-10 gs-section">
+      <!-- User Reviews Indicator in Hero -->
+      <div class="flex flex-col items-center gap-4 mb-10 gs-section">
+        <div class="flex -space-x-2">
+          <img class="w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20"
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="User 1" />
+          <img class="w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20"
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sam" alt="User 2" />
+          <img class="w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20"
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Jordan" alt="User 3" />
+          <img class="w-10 h-10 rounded-full border-2 border-background ring-2 ring-primary/20"
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Chris" alt="User 4" />
+          <div
+            class="w-10 h-10 rounded-full bg-surface-container-highest border-2 border-background ring-2 ring-primary/20 flex items-center justify-center text-[10px] font-black text-primary">
+            +12k</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <div class="flex gap-0.5">
+            <span class="material-symbols-outlined text-secondary text-sm"
+              style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="material-symbols-outlined text-secondary text-sm"
+              style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="material-symbols-outlined text-secondary text-sm"
+              style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="material-symbols-outlined text-secondary text-sm"
+              style="font-variation-settings: 'FILL' 1;">star</span>
+            <span class="material-symbols-outlined text-secondary text-sm"
+              style="font-variation-settings: 'FILL' 1;">star</span>
+          </div>
+          <span class="text-on-surface-variant font-label text-[10px] uppercase font-bold tracking-[0.2em]">Trusted by
+            thousands worldwide</span>
+        </div>
+      </div>
+
+      <div
+        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-container-low border border-outline-variant/20 mb-8">
+        <span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_10px_#a2f31f]"></span>
+        <span class="font-label text-xs tracking-widest uppercase text-on-surface-variant">v2.0 NOW LIVE</span>
+      </div>
+      <h1 class="font-headline font-extrabold text-7xl md:text-8xl tracking-tighter leading-[0.9] mb-8 text-on-surface">
+        The Future of <br />
+        <span
+          class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-container to-secondary">Interviews
+          is Here.</span>
+      </h1>
+      <p id="hero-subtitle"
+        data-text="Harness the power of tactile AI intelligence to transform your hiring workflow into a high-fidelity emotional intelligence engine."
+        class="max-w-2xl mx-auto text-on-surface-variant text-lg md:text-xl mb-12 font-body leading-relaxed min-h-[4rem] flex items-center justify-center">
+      </p>
+      <div class="flex flex-col md:flex-row items-center justify-center gap-6">
+        <button
+          class="w-full md:w-auto bg-primary text-on-primary font-headline px-10 py-5 rounded-lg text-lg font-extrabold jelly-glow hover:scale-105 active:scale-95 transition-all duration-300 ease-[0.34,1.56,0.64,1]"
+          onclick="window.location.href='/signup'">
+          Get Started Now
+        </button>
+        <button
+          class="w-full md:w-auto flex items-center justify-center gap-3 px-10 py-5 rounded-lg bg-surface-container-highest/40 backdrop-blur-xl border border-primary/10 hover:bg-surface-container-highest transition-all group"
+          onclick="window.location.href='/interview'">
+          <span class="material-symbols-outlined text-primary group-hover:scale-125 transition-transform"
+            data-icon="play_circle" style="font-variation-settings: 'FILL' 1;">play_circle</span>
+          <span class="font-headline font-bold">Watch Demo</span>
+        </button>
+      </div>
+      <!-- Hero Image/Visual -->
+      <div class="mt-24 relative max-w-5xl mx-auto">
+        <div
+          class="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10 pointer-events-none">
+        </div>
+        <div class="glass-panel p-4 rounded-xl shadow-2xl relative z-20 cursor-default tilt-element">
+          <div
+            class="bg-surface-container-lowest rounded-lg overflow-hidden aspect-video border border-outline-variant/10 relative">
+            <img
+              class="w-full h-full object-cover opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700"
+              alt="Futuristic AI interface showing interview analytics and emotional scores"
+              src="/static/img/hero.png" />
+            <!-- Floating Intelligence Orb Component -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20"
+              style="transform-style: preserve-3d;">
+              <div
+                class="w-48 h-48 rounded-full flex items-center justify-center hover:scale-110 transition-all duration-500 cursor-pointer group orb-3d backdrop-blur-3xl">
+                <div class="text-center group-hover:scale-105 transition-transform duration-500"
+                  style="transform: translateZ(30px);">
+                  <span class="font-label text-[10px] uppercase tracking-tighter text-secondary mb-1 block">Confidence
+                    Score</span>
+                  <span class="font-headline text-4xl font-black text-on-surface">98.4<span
+                      class="text-secondary text-xl">%</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- Bento Grid Features -->
+    <section id="features" class="max-w-7xl mx-auto px-8 py-32 gs-section">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+        <!-- Large Feature Card -->
+        <div
+          class="md:col-span-8 bg-surface-container-low hover:bg-surface-container border border-transparent hover:border-primary/20 rounded-xl p-10 relative overflow-hidden group hover:shadow-[0_10px_40px_-10px_rgba(0,238,252,0.15)] tilt-element">
+          <div class="absolute top-0 right-0 p-8" style="transform: translateZ(20px);">
+            <span
+              class="material-symbols-outlined text-primary text-6xl opacity-20 group-hover:opacity-100 transition-opacity duration-500"
+              data-icon="neurology">neurology</span>
+          </div>
+          <div class="relative z-10 max-w-md" style="transform: translateZ(40px);">
+            <span class="font-label text-secondary tracking-widest mb-4 block">CORE TECHNOLOGY</span>
+            <h3 class="font-headline text-4xl font-bold mb-6">Real-time AI Feedback</h3>
+            <p class="text-on-surface-variant text-lg leading-relaxed mb-8">
+              Our neural network analyzes speech patterns and technical accuracy as they happen, providing interviewers
+              with instant tactical insights.
+            </p>
+            <div class="flex gap-4">
+              <div
+                class="px-4 py-2 rounded-md bg-surface-container-highest border border-outline-variant/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-sm" data-icon="bolt">bolt</span>
+                <span class="font-label text-xs">LATENCY &lt; 50MS</span>
+              </div>
+              <div
+                class="px-4 py-2 rounded-md bg-surface-container-highest border border-outline-variant/20 flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-sm"
+                  data-icon="check_circle">check_circle</span>
+                <span class="font-label text-xs">PRECISION 99.2%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Small Feature Card 1 -->
+        <div
+          class="md:col-span-4 bg-tertiary-container/10 hover:bg-tertiary-container/20 border border-tertiary/10 hover:border-tertiary/30 rounded-xl p-8 flex flex-col justify-between group hover:shadow-[0_10px_40px_-10px_rgba(255,107,155,0.15)] tilt-element">
+          <div
+            class="w-16 h-16 rounded-lg bg-tertiary-container flex items-center justify-center mb-12 shadow-[0_0_30px_rgba(255,6,127,0.4)] group-hover:scale-110 transition-transform"
+            style="transform: translateZ(30px);">
+            <span class="material-symbols-outlined text-on-tertiary text-3xl" data-icon="mood"
+              style="font-variation-settings: 'FILL' 1;">mood</span>
+          </div>
+          <div style="transform: translateZ(10px);">
+            <h4 class="font-headline text-2xl font-bold mb-4">Emotional Intelligence</h4>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Beyond technical skills. Detect sentiment, engagement levels, and soft-skill cues using advanced biometric
+              mapping.
+            </p>
+          </div>
+        </div>
+        <!-- Small Feature Card 2 -->
+        <div
+          class="md:col-span-4 bg-surface-container-low hover:bg-surface-container border border-transparent hover:border-primary/20 rounded-xl p-8 flex flex-col justify-between group hover:shadow-[0_10px_40px_-10px_rgba(0,238,252,0.15)] tilt-element">
+          <div
+            class="w-16 h-16 rounded-lg bg-surface-container-highest flex items-center justify-center mb-12 border border-outline-variant group-hover:border-primary transition-colors"
+            style="transform: translateZ(30px);">
+            <span class="material-symbols-outlined text-primary text-3xl" data-icon="hub">hub</span>
+          </div>
+          <div style="transform: translateZ(10px);">
+            <h4 class="font-headline text-2xl font-bold mb-4">Native Integrations</h4>
+            <p class="text-on-surface-variant text-sm leading-relaxed">
+              Sync seamlessly with Greenhouse, Lever, and Slack. Your existing stack, now supercharged with AI.
+            </p>
+          </div>
+        </div>
+        <!-- Tall Feature Card -->
+        <div
+          class="md:col-span-8 bg-surface-container-low hover:bg-surface-container border border-transparent hover:border-primary/20 rounded-xl relative overflow-hidden group min-h-[400px] hover:shadow-[0_10px_40px_-10px_rgba(0,238,252,0.15)] tilt-element">
+          <img
+            class="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-110 transition-transform duration-1000"
+            alt="Data visualization dashboard with glowing neon charts and analytics"
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuDyJvbZvNsceJ0OSfXm88QtGpYBwipB_4djN-9cEgclcIEjup_9koEvarapaJlZD4KF_tSLsJRyeYk5Yo8AJ4iLHFPi_zpsTCI9QXfPG7Jl-vhS-G4jS7fxDq29kINqFEaov2DLRRxhKyqayZCLCppP5w9SzCXyppWJYY4m6D7gpo9gOcgCYhXdD07rgVxlqeFqbYFnm3BxI79Fn0nXPnTwSQquDykQ86XQjYH0TYXAyA0vql1R8-ik9qDm95o3g1TqCoHacJZLX8i1"
+            style="transform: translateZ(-50px);" />
+          <div class="absolute inset-0 bg-gradient-to-r from-background to-transparent"></div>
+          <div class="relative z-10 p-10 h-full flex flex-col justify-center max-w-sm"
+            style="transform: translateZ(40px);">
+            <h3 class="font-headline text-4xl font-bold mb-6">Predictive Hiring Analytics</h3>
+            <p class="text-on-surface-variant text-lg leading-relaxed mb-8">
+              Turn raw interview data into long-term retention forecasts and culture-fit scores.
+            </p>
+            <button class="flex items-center gap-2 text-primary font-bold group">
+              Explore Analytics
+              <span class="material-symbols-outlined group-hover:translate-x-2 transition-transform"
+                data-icon="arrow_forward">arrow_forward</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="max-w-7xl mx-auto px-8 py-32 gs-section">
+      <div
+        class="bg-primary-container rounded-xl p-16 text-center relative overflow-hidden flex flex-col items-center tilt-element">
+        <div
+          class="absolute top-0 right-0 w-96 h-96 bg-secondary rounded-full blur-[120px] opacity-30 -translate-y-1/2 translate-x-1/2">
+        </div>
+        <div class="relative z-10" style="transform: translateZ(40px);">
+          <h2 class="font-headline text-5xl md:text-6xl font-black text-on-primary-container mb-8 tracking-tighter">
+            Ready to hire smarter?</h2>
+          <p class="text-on-primary-container/80 text-xl mb-12 max-w-xl mx-auto font-medium">
+            Join 200+ forward-thinking enterprises using interv.io to build high-performance teams.
+          </p>
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              class="bg-surface-container-lowest text-on-surface font-headline px-12 py-5 rounded-lg text-lg font-extrabold shadow-2xl hover:scale-105 active:scale-95 transition-all"
+              onclick="window.location.href='/signup'">
+              Get Started Free
+            </button>
+            <button
+              class="bg-transparent border-2 border-on-primary-container text-on-primary-container font-headline px-12 py-5 rounded-lg text-lg font-extrabold hover:bg-on-primary-container hover:text-primary-container transition-all hover:-translate-y-1"
+              onclick="window.location.href='/dashboard'">
+              Contact Sales
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section id="reviews" class="max-w-7xl mx-auto px-8 py-32 gs-section">
+      <header class="max-w-4xl mx-auto text-center mb-20">
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 mb-6">
+          <span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_10px_#00eefc]"></span>
+          <span class="font-label text-xs tracking-widest uppercase text-on-surface-variant">Validated Impact</span>
+        </div>
+        <h2
+          class="font-headline text-5xl md:text-6xl font-black tracking-tight leading-snug py-2 mb-6 bg-clip-text text-transparent bg-gradient-to-b from-on-surface to-on-surface-variant">
+          Hiring Teams <span class="text-primary italic">Transform With Us</span>
+        </h2>
+      </header>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 auto-rows-fr">
+        <!-- Testimonial 1 -->
+        <div
+          class="slab-3d hover-glow bg-surface-container-low rounded-xl p-8 border border-white/5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex gap-0.5 text-secondary">
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+            </div>
+            <p class="font-body text-on-surface leading-relaxed italic">"The kinetic intelligence engine has reduced our
+              technical screening time by 75%. It's like having a specialized architect in every interview."</p>
+          </div>
+          <div class="flex items-center gap-4 mt-8 pt-6 border-t border-outline-variant/10">
+            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/20">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" alt="Sarah J." />
+            </div>
+            <div>
+              <p class="font-headline font-bold text-sm">Sarah Jenkins</p>
+              <p class="text-[10px] uppercase tracking-widest text-outline">Eng Director @ TechStream</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 2 (Featured) -->
+        <div
+          class="slab-3d hover-glow bg-surface-container-highest/20 backdrop-blur-3xl rounded-xl p-8 border-2 border-primary/30 flex flex-col justify-between shadow-[0_0_40px_rgba(0,238,252,0.1)]">
+          <div class="space-y-4">
+            <div class="flex gap-0.5 text-secondary">
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+            </div>
+            <p class="font-headline text-lg font-bold text-on-surface leading-tight">"A paradigm shift in how we assess
+              emotional intelligence. The high-fidelity data points are incredible."</p>
+          </div>
+          <div class="flex items-center gap-4 mt-8 pt-6 border-t border-primary/10">
+            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Mark" alt="Mark T." />
+            </div>
+            <div>
+              <p class="font-headline font-bold text-sm text-primary">Mark Thompson</p>
+              <p class="text-[10px] uppercase tracking-widest text-primary/60">Talent Lead @ Innovate.ai</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Testimonial 3 -->
+        <div
+          class="slab-3d hover-glow bg-surface-container-low rounded-xl p-8 border border-white/5 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex gap-0.5 text-secondary">
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+              <span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">star</span>
+            </div>
+            <p class="font-body text-on-surface leading-relaxed italic">"Integrating the 3D neural infrastructure into
+              our HR flow was seamless. Our hiring quality index has spiked significantly."</p>
+          </div>
+          <div class="flex items-center gap-4 mt-8 pt-6 border-t border-outline-variant/10">
+            <div class="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/20">
+              <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Elena" alt="Elena R." />
+            </div>
+            <div>
+              <p class="font-headline font-bold text-sm">Elena Rodriguez</p>
+              <p class="text-[10px] uppercase tracking-widest text-outline">VP People @ CloudScale</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="max-w-7xl mx-auto px-8 py-32 gs-section">
+      <header class="max-w-4xl mx-auto text-center mb-20">
+        <div
+          class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/20 mb-6">
+          <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+          <span class="font-label text-xs tracking-widest uppercase text-on-surface-variant">Kinetic Intelligence
+            Engine</span>
+        </div>
+        <h2
+          class="font-headline text-5xl md:text-6xl font-extrabold tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-on-surface to-on-surface-variant">
+          Scale Human Insight<br />With <span class="text-primary">Fluid Precision</span>
+        </h2>
+        <p class="font-body text-lg text-on-surface-variant max-w-2xl mx-auto">
+          Select the throughput your team requires. Our 3D neural infrastructure adapts to your interview volume in
+          real-time.
+        </p>
+      </header>
+
+      <!-- Pricing Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+        <!-- Starter Plan -->
+        <div
+          class="slab-3d hover-glow group relative bg-surface-container-low rounded-xl p-8 border border-white/5 overflow-hidden flex flex-col h-full min-h-[600px]">
+          <div class="absolute inset-0 glass-edge opacity-20 pointer-events-none"></div>
+          <div class="mb-8">
+            <span class="font-label text-xs font-bold tracking-widest text-outline uppercase">Entry Tier</span>
+            <h3 class="font-headline text-4xl font-black mt-2">Starter</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-5xl font-black tracking-tighter">$49</span>
+              <span class="text-on-surface-variant font-label">/mo</span>
+            </div>
+          </div>
+          <div class="space-y-4 mb-10 flex-grow">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">10 AI Interviews / month</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Standard Sentiment Analysis</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Auto-Transcript Generation</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Email Support</span>
+            </div>
+          </div>
+          <button
+            class="w-full bg-surface-container-highest text-on-surface font-bold py-4 rounded-lg group-hover:bg-primary group-hover:text-on-primary transition-all duration-300 font-headline"
+            onclick="window.location.href='/signup'">
+            Deploy Starter
+          </button>
+        </div>
+
+        <!-- Growth Plan (Featured) -->
+        <div
+          class="slab-3d hover-glow group relative bg-surface-container rounded-xl p-8 border-2 border-primary/30 overflow-hidden flex flex-col h-full min-h-[650px] shadow-[0_0_50px_rgba(0,238,252,0.1)]">
+          <div
+            class="absolute top-0 right-0 px-6 py-2 bg-primary-container text-on-primary-container font-label font-black text-[10px] tracking-[0.2em] uppercase rounded-bl-xl z-10">
+            Most Popular
+          </div>
+          <div class="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none"></div>
+          <div class="mb-8">
+            <span class="font-label text-xs font-bold tracking-widest text-primary uppercase">Mid-Scale Pulse</span>
+            <h3 class="font-headline text-4xl font-black mt-2">Growth</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-5xl font-black tracking-tighter text-primary">$199</span>
+              <span class="text-on-surface-variant font-label">/mo</span>
+            </div>
+          </div>
+          <div class="space-y-4 mb-10 flex-grow">
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="bolt"
+                style="font-variation-settings: 'FILL' 1;">bolt</span>
+              <span class="text-on-surface font-semibold font-body">50 AI Interviews / month</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Advanced Behavioral Mapping</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Team Collaboration Suite</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">API Access (Beta)</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Priority Support</span>
+            </div>
+          </div>
+          <button
+            class="w-full bg-primary-fixed text-on-primary-fixed font-black py-5 rounded-lg jelly-shadow hover:scale-105 active:scale-95 transition-all duration-300 font-headline uppercase tracking-tight"
+            onclick="window.location.href='/signup'">
+            Scale Growth
+          </button>
+        </div>
+
+        <!-- Enterprise Plan -->
+        <div
+          class="slab-3d hover-glow group relative bg-surface-container-low rounded-xl p-8 border border-white/5 overflow-hidden flex flex-col h-full min-h-[600px]">
+          <div class="absolute inset-0 glass-edge opacity-20 pointer-events-none"></div>
+          <div class="mb-8">
+            <span class="font-label text-xs font-bold tracking-widest text-tertiary uppercase">Max Capacity</span>
+            <h3 class="font-headline text-4xl font-black mt-2">Enterprise</h3>
+            <div class="mt-4 flex items-baseline gap-1">
+              <span class="text-5xl font-black tracking-tighter">Custom</span>
+            </div>
+          </div>
+          <div class="space-y-4 mb-10 flex-grow">
+            <div class="p-4 rounded-lg bg-surface-container border border-outline-variant/10 mb-6">
+              <div class="flex items-center gap-2 text-tertiary mb-1">
+                <span class="material-symbols-outlined text-sm" data-icon="security"
+                  style="font-variation-settings: 'FILL' 1;">security</span>
+                <span class="font-label text-[10px] uppercase font-bold tracking-widest">Premium Directive</span>
+              </div>
+              <p class="text-on-surface font-bold font-body">Full Security Suite Included</p>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-secondary" data-icon="psychology"
+                style="font-variation-settings: 'FILL' 1;">psychology</span>
+              <span class="text-on-surface font-semibold font-body">Custom AI Tuning</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Unlimited Interviews</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">SSO &amp; SAML Auth</span>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="material-symbols-outlined text-primary" data-icon="check_circle">check_circle</span>
+              <span class="text-on-surface-variant font-body">Dedicated Account Manager</span>
+            </div>
+          </div>
+          <button
+            class="w-full bg-tertiary text-on-tertiary font-black py-4 rounded-lg group-hover:scale-105 transition-all duration-300 font-headline"
+            onclick="window.location.href='/signup'">
+            Contact Sales
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trust Section (Bento Grid Style) -->
+    <section class="max-w-7xl mx-auto px-8 pb-32 gs-section">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="md:col-span-2 hover-glow bg-surface-container-low rounded-xl p-8 border border-outline-variant/5">
+          <div class="flex items-center gap-4 mb-6">
+            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+              <span class="material-symbols-outlined text-primary" data-icon="verified_user">verified_user</span>
+            </div>
+            <h4 class="font-headline text-xl font-bold">Secure Infrastructure</h4>
+          </div>
+          <p class="text-on-surface-variant font-body">SOC2 Type II compliant with end-to-end encryption for every
+            kinetic data point captured during interviews.</p>
+        </div>
+        <div
+          class="bg-surface-container-low hover-glow rounded-xl p-8 border border-outline-variant/5 flex flex-col justify-center text-center">
+          <div class="text-4xl font-black text-secondary font-headline mb-2">99.9%</div>
+          <div class="font-label text-xs uppercase tracking-[0.2em] text-outline">Uptime SLA</div>
+        </div>
+        <div
+          class="bg-surface-container-low hover-glow rounded-xl p-8 border border-outline-variant/5 flex flex-col justify-center text-center">
+          <div class="text-4xl font-black text-tertiary font-headline mb-2">24/7</div>
+          <div class="font-label text-xs uppercase tracking-[0.2em] text-outline">Expert Support</div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <!-- Footer Shell -->
+  <footer class="bg-[#0e0e0f] w-full pt-20 pb-10 px-8 mt-20 border-t border-outline-variant/10">
+    <div class="flex flex-col md:flex-row justify-between items-end w-full max-w-7xl mx-auto gap-20">
+      <div class="w-full md:w-auto">
+        <a href="/" class="inline-block mb-6 opacity-30 grayscale hover:grayscale-0 hover:opacity-100 transition-all duration-500 group">
+          <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" class="h-12 w-auto" style="filter: hue-rotate(150deg) brightness(1.2);">
+        </a>
+        <p class="text-on-surface-variant font-label text-xs tracking-widest uppercase">
+          © 2024 interv.io. Kinetic Intelligence.
+        </p>
+      </div>
+      <div class="flex flex-wrap gap-12">
+        <div class="flex flex-col gap-4">
+          <span class="font-label text-cyan-500 text-xs tracking-[0.2em] uppercase mb-4">Product</span>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Platform</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Analytics</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Security</a>
+        </div>
+        <div class="flex flex-col gap-4">
+          <span class="font-label text-cyan-500 text-xs tracking-[0.2em] uppercase mb-4">Company</span>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">About</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Careers</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Press</a>
+        </div>
+        <div class="flex flex-col gap-4">
+          <span class="font-label text-cyan-500 text-xs tracking-[0.2em] uppercase mb-4">Legal</span>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Privacy</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Terms</a>
+          <a class="text-slate-500 hover:text-cyan-400 transition-colors font-label text-xs tracking-widest"
+            href="#">Contact</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.1/vanilla-tilt.min.js"></script>
+  <script>
+    // 1. Mouse-Responsive Parallax Environment (Background Orbs)
+    document.addEventListener("mousemove", (e) => {
+      const x = (window.innerWidth / 2 - e.pageX) / 35;
+      const y = (window.innerHeight / 2 - e.pageY) / 35;
+      gsap.to(".orb-float", { x: x, y: y, duration: 1.5, ease: "power2.out" });
+    });
+
+    // 2. Glassmorphic 3D Integration (Tilt & Light Glare)
+    VanillaTilt.init(document.querySelectorAll(".tilt-element"), {
+      max: 8,
+      speed: 400,
+      glare: true,
+      "max-glare": 0.2,
+      perspective: 1200
+    });
+
+    // 3. Scroll-Triggered 3D Camera Animations
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.utils.toArray(".gs-section").forEach(section => {
+      gsap.from(section, {
+        scrollTrigger: {
+          trigger: section,
+          start: "top 85%",
+          toggleActions: "play none none reverse"
+        },
+        y: 80,
+        opacity: 0,
+        duration: 1.2,
+        ease: "circ.easeOut"
+      });
+    });
+
+    // 4. Typewriter Effect for Hero Subtitle
+    const subtitle = document.getElementById("hero-subtitle");
+    if (subtitle) {
+      const text = subtitle.getAttribute("data-text");
+      let i = 0;
+      setTimeout(() => {
+        function typeWriter() {
+          if (i < text.length) {
+            subtitle.innerHTML += text.charAt(i);
+            i++;
+            setTimeout(typeWriter, 15);
+          }
+        }
+        typeWriter();
+      }, 600);
+    }
+  </script>
+</body>
+
+</html>

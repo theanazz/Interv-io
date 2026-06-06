@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}interv.io | Resume Intelligence{% endblock %}
+{% block header_title %}Resume AI Analysis 📄{% endblock %}
+
+{% block content %}
+<section class="p-10 space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    
+    <!-- Upload Section -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-10">
+        <div class="md:col-span-12 glass-panel p-10 rounded-[2.5rem] border-dashed border-primary/30 hover:border-primary/60 transition-all group flex flex-col items-center justify-center text-center cursor-pointer">
+            <div class="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-6 group-hover:animate-float">
+                <span class="material-symbols-outlined text-3xl">upload_file</span>
+            </div>
+            <h2 class="font-headline text-2xl mb-3 text-white">Optimize Your Profile</h2>
+            <p class="text-on-surface-variant max-w-xl mx-auto mb-8 text-sm">Upload your resume to unlock personalized AI interview questions, gap-year suggestions, and weakness-based prep.</p>
+            <div class="flex gap-4">
+                <input type="file" id="resume-upload" class="hidden" accept=".pdf,.doc,.docx">
+                <button id="select-resume-btn" onclick="document.getElementById('resume-upload').click()" class="bg-primary hover:bg-primary/80 text-background px-8 py-3 rounded-full text-xs font-headline font-black uppercase tracking-widest transition-all">Select Resume</button>
+                <div class="px-6 py-3 rounded-full bg-surface-container border border-outline-variant/20 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-outline text-lg">description</span>
+                    <span id="file-name-display" class="text-xs text-outline font-label">{{ user.resume_path if user.resume_path else 'No file chosen' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Insights & Weakness Suggestions -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="glass-panel p-10 rounded-[2.5rem] relative overflow-hidden">
+            <h3 class="font-headline text-xl mb-6 text-white flex items-center gap-3">
+                <span class="material-symbols-outlined text-primary">psychology</span>
+                Personalized Questions
+            </h3>
+            <div id="personalized-questions-container" class="space-y-4">
+                <!-- Dynamic Content Here -->
+                <p class="text-on-surface-variant text-sm italic">Upload your resume to see personalized questions.</p>
+            </div>
+        </div>
+
+        <div class="glass-panel p-10 rounded-[2.5rem] relative overflow-hidden bg-gradient-to-br from-tertiary/5 to-transparent">
+            <h3 class="font-headline text-xl mb-6 text-white flex items-center gap-3">
+                <span class="material-symbols-outlined text-tertiary">warning</span>
+                Weakness Analysis
+            </h3>
+            <div id="weakness-analysis-container" class="space-y-6">
+                <!-- Dynamic Content Here -->
+                <p class="text-on-surface-variant text-sm italic">Upload your resume to see weakness analysis.</p>
+            </div>
+            <div class="absolute -right-16 -top-16 w-48 h-48 bg-tertiary/5 blur-[80px] rounded-full"></div>
+        </div>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const fileInput = document.getElementById('resume-upload');
+    const selectBtn = document.getElementById('select-resume-btn');
+    const fileNameDisplay = document.getElementById('file-name-display');
+    const questionsContainer = document.getElementById('personalized-questions-container');
+    const weaknessContainer = document.getElementById('weakness-analysis-container');
+
+    fileInput.addEventListener('change', async (e) => {
+        if (!e.target.files.length) return;
+        const file = e.target.files[0];
+        fileNameDisplay.textContent = file.name;
+        
+        selectBtn.textContent = 'ANALYZING...';
+        selectBtn.disabled = true;
+        selectBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        
+        const formData = new FormData();
+        formData.append('resume', file);
+        
+        try {
+            const res = await fetch('/analyze-resume', {
+                method: 'POST',
+                body: formData
+            });
+            const data = await res.json();
+            
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                // Populate Questions
+                if (data.personalized_questions) {
+                    questionsContainer.innerHTML = '';
+                    data.personalized_questions.forEach(q => {
+                        questionsContainer.innerHTML += `
+                            <div class="p-5 rounded-2xl bg-background/50 border border-outline-variant/10 hover:border-primary/20 transition-all group animate-in fade-in slide-in-from-bottom-2 duration-500">
+                                <p class="text-[10px] text-outline uppercase tracking-widest mb-1">${q.category}</p>
+                                <p class="text-sm text-white group-hover:text-primary transition-colors">"${q.question}"</p>
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Populate Weaknesses
+                if (data.weaknesses) {
+                    weaknessContainer.innerHTML = '';
+                    data.weaknesses.forEach((w, idx) => {
+                        weaknessContainer.innerHTML += `
+                            <div class="flex gap-4 animate-in fade-in slide-in-from-bottom-2 duration-500" style="animation-delay: ${idx * 100}ms">
+                                <div class="w-10 h-10 rounded-2xl bg-tertiary/10 flex items-center justify-center text-tertiary flex-shrink-0">${idx + 1}</div>
+                                <div>
+                                    <p class="text-sm font-bold text-white mb-1">${w.title}</p>
+                                    <p class="text-xs text-on-surface-variant leading-relaxed">${w.description}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+            }
+        } catch (error) {
+            console.error(error);
+            alert('A network error occurred.');
+        } finally {
+            selectBtn.textContent = 'SELECT RESUME';
+            selectBtn.disabled = false;
+            selectBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+});
+</script>
+{% endblock %}

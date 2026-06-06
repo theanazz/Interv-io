@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>interv.io | Sign Up</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Manrope:wght@400;500;600&family=Space_Grotesk:wght@500;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+          tailwind.config = {
+            darkMode: "class",
+            theme: {
+              extend: {
+                colors: {
+                  "surface-variant": "#262627",
+                  "background": "#0e0e0f",
+                  "primary-container": "#00eefc",
+                  "outline-variant": "#484849",
+                  "surface": "#0e0e0f",
+                  "surface-container-highest": "#262627",
+                  "on-surface-variant": "#adaaab",
+                  "on-background": "#ffffff",
+                  "surface-container": "#1a191b",
+                  "on-surface": "#ffffff",
+                  "surface-container-low": "#131314",
+                  "primary": "#8ff5ff",
+                  "primary-fixed": "#00eefc",
+                  "on-primary-fixed": "#003f43"
+                },
+                fontFamily: {
+                  "headline": ["Plus Jakarta Sans"],
+                  "body": ["Manrope"],
+                  "label": ["Space Grotesk"]
+                },
+                borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+              },
+            },
+          }
+    </script>
+    <style>
+        .jelly-glow {
+            box-shadow: 0 0 30px rgba(0, 238, 252, 0.4), inset 0 -4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .glass-panel {
+            background: rgba(38, 38, 39, 0.4);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container relative overflow-x-hidden">
+
+    <!-- Top Navigation Minimal -->
+    <nav class="absolute top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-6 max-w-7xl mx-auto">
+        <a href="/" class="flex items-center gap-2 group transition-all duration-500">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" 
+              class="h-10 w-auto transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(0,238,252,0.4)]" 
+              style="filter: hue-rotate(150deg) brightness(1.1);">
+        </a>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center relative px-6 z-10 w-full pt-20 pb-20">
+        <!-- Background Ambient Glows -->
+        <div class="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+            <div class="absolute top-1/4 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 blur-[120px] rounded-full"></div>
+            <div class="absolute bottom-1/4 right-0 w-[400px] h-[400px] bg-cyan-400/5 blur-[100px] rounded-full"></div>
+        </div>
+
+        <!-- Signup Container -->
+        <div class="w-full max-w-md relative z-10">
+            <div class="text-center mb-8">
+                <h1 class="font-headline text-4xl md:text-5xl text-white tracking-tight mb-3 mt-4">Create account</h1>
+                <p class="font-body text-on-surface-variant">Join the next generation of AI-driven hiring.</p>
+            </div>
+
+            <div class="glass-panel p-8 md:p-10 rounded-2xl shadow-2xl relative">
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="mb-6">
+                    {% for message in messages %}
+                      <div class="p-3 bg-error-container/20 border border-error/50 text-error rounded-lg font-body text-sm mb-2 text-center">{{ message }}</div>
+                    {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+                <form class="space-y-6" action="/signup" method="POST">
+                    <!-- Full Name -->
+                    <div>
+                        <label for="name" class="block font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Full Name</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-outline-variant text-[20px]" style="font-variation-settings: 'FILL' 1;">person</span>
+                            </div>
+                            <input type="text" name="name" id="name" class="w-full !bg-surface-container border border-outline-variant/30 text-white rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body placeholder:text-outline-variant" placeholder="Jane Doe" required>
+                        </div>
+                    </div>
+
+                    <!-- Email field -->
+                    <div>
+                        <label for="email" class="block font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Email Address</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-outline-variant text-[20px]" style="font-variation-settings: 'FILL' 1;">mail</span>
+                            </div>
+                            <input type="email" name="email" id="email" class="w-full !bg-surface-container border border-outline-variant/30 text-white rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body placeholder:text-outline-variant" placeholder="name@company.com" required>
+                        </div>
+                    </div>
+
+                    <!-- Password field -->
+                    <div>
+                        <label for="password" class="block font-label text-xs uppercase tracking-widest text-on-surface-variant mb-2">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="material-symbols-outlined text-outline-variant text-[20px]" style="font-variation-settings: 'FILL' 1;">lock</span>
+                            </div>
+                            <input type="password" name="password" id="password" class="w-full !bg-surface-container border border-outline-variant/30 text-white rounded-lg pl-12 pr-4 py-3 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all font-body placeholder:text-outline-variant" placeholder="••••••••" required>
+                        </div>
+                    </div>
+
+                    <!-- Submit -->
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-primary-fixed text-on-primary-fixed font-headline font-bold py-4 rounded-lg jelly-glow hover:scale-[1.02] active:scale-[0.98] transition-all duration-300">
+                            Create Account
+                        </button>
+                    </div>
+                </form>
+
+                <div class="mt-8 text-center border-t border-outline-variant/20 pt-6">
+                    <p class="font-body text-sm text-on-surface-variant">
+                        Already have an account? <a href="/login" class="text-primary hover:underline font-bold">Sign in</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
