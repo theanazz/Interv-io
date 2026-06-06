@@ -631,7 +631,8 @@ def settings():
         email = request.form.get('email')
         
         conn = database.get_db_connection()
-        conn.execute('UPDATE users SET name = ?, email = ? WHERE id = ?', (name, email, user_id))
+        with conn.cursor() as c:
+            c.execute('UPDATE users SET name = %s, email = %s WHERE id = %s', (name, email, user_id))
         conn.commit()
         conn.close()
         
