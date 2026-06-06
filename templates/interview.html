@@ -276,8 +276,8 @@
     </div>
 
     <!-- Coding Challenge Mode Panel -->
-    <div id="coding-workspace" class="hidden flex-grow flex flex-col gap-4 overflow-hidden mb-6" style="height: calc(100% - 180px); width: 100%;">
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow overflow-hidden h-full">
+    <div id="coding-workspace" class="hidden flex-grow flex-col gap-4 overflow-y-auto lg:overflow-hidden mb-6 min-h-[600px] lg:min-h-0 lg:h-[calc(100%-180px)] w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow lg:overflow-hidden h-full">
             <!-- Left: Problem Description & Test Cases -->
             <div class="lg:col-span-5 flex flex-col gap-4 h-full overflow-y-auto pr-2 custom-scrollbar">
                 <!-- Problem Card -->
