@@ -139,12 +139,12 @@
 
 <body class="bg-background text-on-surface font-body overflow-x-hidden selection:bg-primary selection:text-on-primary">
   <!-- Top Navigation Shell -->
-  <header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-8 py-4">
+  <header class="fixed top-0 left-0 right-0 z-50 flex justify-between items-center px-2 md:px-8 py-2 md:py-4">
     <nav
-      class="rounded-full mt-4 mx-auto max-w-7xl w-[95%] border border-cyan-400/15 bg-surface-variant/60 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex flex-wrap justify-between items-center px-4 lg:px-8 py-3 lg:py-4 gap-y-4">
+      class="rounded-full mt-2 md:mt-4 mx-auto max-w-7xl w-[95%] border border-cyan-400/15 bg-surface-variant/60 backdrop-blur-2xl shadow-[0_20px_40px_rgba(0,0,0,0.4)] flex justify-between items-center px-3 lg:px-8 py-2 lg:py-4">
       <a href="/" class="flex items-center gap-2 group transition-all duration-500">
         <img src="{{ url_for('static', filename='logo.png') }}" alt="interv.io" 
-          class="h-10 w-auto transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(0,238,252,0.4)]" 
+          class="h-7 sm:h-10 w-auto transition-all duration-300 group-hover:drop-shadow-[0_0_15px_rgba(0,238,252,0.4)]" 
           style="filter: hue-rotate(150deg) brightness(1.1);">
       </a>
       <div class="hidden md:flex items-center gap-8">
@@ -158,10 +158,10 @@
           href="#pricing">Pricing</a>
       </div>
       <div class="flex items-center gap-2 sm:gap-4">
-        <button class="text-on-surface-variant font-bold hover:text-primary transition-colors"
+        <button class="text-xs sm:text-base text-on-surface-variant font-bold hover:text-primary transition-colors"
           onclick="window.location.href='/login'">Login</button>
         <button
-          class="bg-primary-fixed text-on-primary-fixed font-headline px-6 py-2.5 rounded-full font-bold jelly-glow hover:scale-105 active:scale-95 transition-all duration-300 ease-[0.34,1.56,0.64,1]"
+          class="bg-primary-fixed text-on-primary-fixed font-headline text-xs sm:text-base px-4 sm:px-6 py-1.5 sm:py-2.5 rounded-full font-bold jelly-glow hover:scale-105 active:scale-95 transition-all duration-300 ease-[0.34,1.56,0.64,1]"
           onclick="window.location.href='/signup'">Get Started</button>
       </div>
     </nav>
